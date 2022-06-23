@@ -538,7 +538,7 @@ init python in project:
 
                     for path in f:
                         path = path.strip()
-                        if len(path) > 0:
+                        if path:
                             self.scan_directory_direct(path)
 
 
@@ -581,6 +581,24 @@ init python in project:
                 self.projects.append(p)
 
             self.all_projects.append(p)
+
+
+        def add_directory(self, path):
+            """
+            Adds the given path to the projects.txt file,
+            so that it's recognized by scan_directory.
+            """
+            path = path.strip()
+            projects_txt_fn = os.path.join(self.projects_directory, "projects.txt")
+
+            if os.path.exists(projects_txt_fn):
+                with open(projects_txt_fn, "r") as f:
+                    for l in f:
+                        if l.strip() == path:
+                            return
+
+            with open(projects_txt_fn, "a"):
+                print(path, file=f)
 
 
         def get(self, name):
