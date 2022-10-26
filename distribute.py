@@ -37,17 +37,16 @@ def zip_rapt_symbols(destination):
     else:
         zf = zipfile.ZipFile(destination + "/android-native-symbols.zip", "w", zipfile.ZIP_DEFLATED, compresslevel=3)
 
-    for dn, dirs, files in os.walk("rapt/symbols"):
-        for fn in dirs + files:
-            fn = os.path.join(dn, fn)
-            arcname = os.path.relpath(fn, "rapt/symbols")
-            zf.write(fn, arcname)
-
-    zf.close()
+    with zf:
+        for dn, dirs, files in os.walk("rapt/symbols"):
+            for fn in dirs + files:
+                fn = os.path.join(dn, fn)
+                arcname = os.path.relpath(fn, "rapt/symbols")
+                zf.write(fn, arcname)
 
 def copy_tutorial_file(src, dest):
     """
-    Copies a file from src to dst. Lines between  "# tutorial-only" and
+    Copies a file from src to dst. Lines between "# tutorial-only" and
     "# end-tutorial-only" comments are omitted from the copy.
     """
 
