@@ -160,7 +160,7 @@ def main():
     reload(sys.modules['renpy'])
 
     if args.append_version:
-        args.version += "-"  + renpy.version_only
+        args.version += "-" + renpy.version_only
 
     # Check that the versions match.
     full_version = renpy.version_only # @UndefinedVariable
