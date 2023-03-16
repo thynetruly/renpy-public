@@ -314,26 +314,22 @@ cdef class StyleCore:
         rv.properties = list(self.properties)
         return rv
 
-    def __richcmp__(self, o, int op):
+    def __eq__(self, o):
         if self is o:
-            eq = True
+            return True
         elif type(self) != type(o):
-            eq = False
+            return False
         elif self.parent != o.parent:
-            eq = False
+            return False
         elif self.name != o.name:
-            eq = False
+            return False
         elif self.properties != o.properties:
-            eq = False
+            return False
         else:
-            eq = True
+            return True
 
-        if op == 2: # ==
-            return eq
-        elif op == 3: # !=
-            return not eq
-        else:
-            return NotImplemented
+    def __ne__(self, o):
+        return not (self == o)
 
     def __dealloc__(self):
         unbuild_style(self)
@@ -368,10 +364,9 @@ cdef class StyleCore:
         if rv is not None:
             return rv
 
-        if self.parent is not None:
-            parent = self.parent + (name,)
-        else:
-            parent = None
+        parent = self.parent
+        if parent is not None:
+            parent += (name,)
 
         rv = Style(parent, name=tname)
         styles[tname] = rv
