@@ -924,6 +924,23 @@ class DefaultParser(Parser):
 DefaultParser("default")
 
 
+class DefineParser(Parser):
+
+    def parse(self, loc, l, parent, keyword):
+
+        name = l.require(l.word)
+        l.require(r'=')
+        rest = l.rest()
+
+        l.expect_eol()
+        l.expect_noblock('define statement')
+
+        return slast.SLDefine(loc, name, rest)
+
+
+DefineParser("define")
+
+
 class UseParser(Parser):
 
     def __init__(self, name):

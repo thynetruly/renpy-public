@@ -1912,6 +1912,45 @@ class SLDefault(SLNode):
     def dump_const(self, prefix):
         self.dc(prefix, "default {} = {}", self.variable, self.expression)
 
+class SLDefine(SLNode):
+
+    def __init__(self, loc, variable, expression):
+        SLNode.__init__(self, loc)
+
+        self.variable = variable
+        self.expression = expression
+
+    def copy(self, transclude):
+        rv = self.instantiate(transclude)
+
+        rv.variable = self.variable
+        rv.expression = self.expression
+
+        return rv
+
+    def analyze(self, analysis):
+        analysis.mark_constant(self.variable)
+
+    def prepare(self, analysis):
+        self.expr = compile_expr(self.location, ccache.ast_eval(self.expression))
+        self.constant = LOCAL_CONST
+        self.last_keyword = True
+
+    def execute(self, context):
+        scope = context.scope
+        variable = self.variable
+
+        if variable in scope:
+            return
+
+        scope[variable] = eval(self.expr, context.globals, scope)
+
+    def has_python(self):
+        return True
+
+    def dump_const(self, prefix):
+        self.dc(prefix, "define {} = {}", self.variable, self.expression)
+
 class SLUse(SLNode):
 
     id = None
