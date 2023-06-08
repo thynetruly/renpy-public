@@ -1,4 +1,4 @@
-﻿init offset = -100
+init offset = -100
 
 python early in layeredimage:
 
@@ -1093,7 +1093,29 @@ python early in layeredimage:
 
         return rv
 
-    renpy.register_statement("layeredimage", parse=parse_layeredimage, execute=execute_layeredimage, init=True, block=True)
+    def lint_rawalways(ra):
+        if (eval(ra.image),) not in renpy.display.image.images:
+            oldnode = renpy.lint.report_node
+            renpy.lint.report_node = ra.image
+            renpy.error("'%s' is not an image."%str(eval(ra.image)))
+            renpy.lint.report_node = oldnode
+
+    def lint_rawattributegroup(rag):
+        for attrib in rag.children:
+            if (eval(attrib.image),) not in renpy.display.image.images:
+                oldnode = renpy.lint.report_node
+                renpy.lint.report_node = attrib.image
+                renpy.error("'%s' is not an image."%str(eval(attrib.image)))
+                renpy.lint.report_node = oldnode
+
+    def lint_layeredimage(p):
+        for child in p.children:
+            if type(child) is RawAlways:
+                lint_rawalways(child)
+            elif type(child) is RawAttributeGroup:
+                lint_rawattributegroup(child)
+
+    renpy.register_statement("layeredimage", parse=parse_layeredimage, execute=execute_layeredimage, init=True, block=True, lint=lint_layeredimage)
 
 
     class LayeredImageProxy(object):
