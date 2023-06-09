@@ -1093,27 +1093,28 @@ python early in layeredimage:
 
         return rv
 
-    def lint_rawalways(ra):
-        if (eval(ra.image),) not in renpy.display.image.images:
-            oldnode = renpy.lint.report_node
-            renpy.lint.report_node = ra.image
-            renpy.error("'%s' is not an image."%str(eval(ra.image)))
-            renpy.lint.report_node = oldnode
+    def lint_hasimage(what, ra):
+        im = ra.image
+        if ra.image is None:
+            return
 
-    def lint_rawattributegroup(rag):
+        try:
+            d = renpy.easy.displayable(eval(im))
+        except Exception:
+            renpy.error("Error when trying to evaluate displayable {} of {}".format(im, what))
+        else:
+            renpy.lint.check_displayable(what, d)
+
+    def lint_rawattributegroup(what, rag):
         for attrib in rag.children:
-            if (eval(attrib.image),) not in renpy.display.image.images:
-                oldnode = renpy.lint.report_node
-                renpy.lint.report_node = attrib.image
-                renpy.error("'%s' is not an image."%str(eval(attrib.image)))
-                renpy.lint.report_node = oldnode
+            lint_hasimage(what, attrib)
 
     def lint_layeredimage(p):
         for child in p.children:
             if type(child) is RawAlways:
-                lint_rawalways(child)
+                lint_hasimage("layeredimage {!r}'s \"always\" clause".format(p.name), child)
             elif type(child) is RawAttributeGroup:
-                lint_rawattributegroup(child)
+                lint_rawattributegroup("layeredimage {!r}'s {!r} attribute group".format(p.name, child.group), child)
 
     renpy.register_statement("layeredimage", parse=parse_layeredimage, execute=execute_layeredimage, init=True, block=True, lint=lint_layeredimage)
 
