@@ -1538,9 +1538,11 @@ def ren_py_to_rpy(text, filename):
     prefix = ""
 
     # Possible states.
-    IGNORE = 0
-    RENPY = 1
-    PYTHON = 2
+    IGNORE, RENPY, PYTHON, DEFAULT = range(4)
+
+    # parameters for default blocks
+    default_store = None
+    default_priority = 0
 
     # The state the state machine is in.
     state = IGNORE
@@ -1557,7 +1559,15 @@ def ren_py_to_rpy(text, filename):
                 continue
 
         if state == RENPY:
-            if l == '"""':
+            isdefault = re.fullmatch(r'default(?: +(\d))?(?: +([a-zA-Z_]\w*))?"""', l)
+            if isdefault is not None:
+                state = DEFAULT
+                default_store = isdefault.group(2)
+                default_priority = isdefault.group(1) or 0
+                result.append('')
+                continue
+
+            elif l == '"""':
                 state = PYTHON
                 result.append('')
                 continue
@@ -1584,6 +1594,19 @@ def ren_py_to_rpy(text, filename):
                 prefix += "    "
 
             result.append(l)
+            continue
+
+        if state == DEFAULT:
+            if re.match(r"^[a-zA-Z_]\w*(?:\.[a-zA-Z_]\w*)*\s*=\s*\S+", l) is None:
+                # not fullmatch because there can be a comment at the end or spaces within the expression
+                raise Exception('In {!r}, line {} is not a correct assignment to be turned into a default.'.format(filename, linenumber))
+            elements = ["default"]
+            if default_priority:
+                elements.append(str(default_priority))
+            if default_store:
+                elements.append(default_store)
+            elements.append(l)
+            result.append(" ".join(elements))
             continue
 
         if state == PYTHON:
