@@ -593,9 +593,10 @@ init -1500 python:
     class Confirm(Action, DictEquality):
         """
         :doc: other_action
+        :args: (prompt, yes, no=NullAction(), confirm_selected=False)
 
         Prompts the user for confirmation of an action. If the user
-        clicks yes, the yes action is performed. Otherwise, the `no`
+        clicks "yes", the `yes` action is performed. Otherwise, the `no`
         action is performed.
 
         `prompt`
@@ -611,7 +612,6 @@ init -1500 python:
 
         See :func:`renpy.confirm` for a function version of this action.
         """
-
 
         def __init__(self, prompt, yes, no=None, confirm_selected=False):
             self.prompt = prompt
