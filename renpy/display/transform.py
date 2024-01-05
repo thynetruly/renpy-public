@@ -342,22 +342,33 @@ class TransformState(renpy.object.Object):
         of the vector going from (xanchoraround, yanchoraround) to (xanchor, yanchor).
         The absolute part of the angle is the angle between the absolute parts of the vectors,
         and the relative part, of the relative parts.
+
+        When the radius is 0, the trig formulae make no sense so in that case,
+        each component of the dualangle default to the last memorized value it was set to,
+        or to the value of the other component, or to 0.
         """
         (absolute_vector_x, absolute_vector_y), (relative_vector_x, relative_vector_y) = polar_vectors or self.get_anchor_polar_vector()
 
         absolute_radius = math.hypot(absolute_vector_x, absolute_vector_y)
-        relative_radius = math.hypot(relative_vector_x, relative_vector_y)
-        absolute_angle = math.atan2(absolute_vector_x, -absolute_vector_y) / math.pi * 180
-        relative_angle = math.atan2(relative_vector_x, -relative_vector_y) / math.pi * 180
-        if absolute_angle < 0:
-            absolute_angle += 360
-        if relative_angle < 0:
-            relative_angle += 360
-
-        if (absolute_radius == 0) and (self.last_absolute_anchorangle is not None):
+        if absolute_radius != 0:
+            absolute_angle = math.atan2(absolute_vector_x, -absolute_vector_y) / math.pi * 180
+            if absolute_angle < 0:
+                absolute_angle += 360
+        else:
             absolute_angle = self.last_absolute_anchorangle
-        if (relative_radius == 0) and (self.last_relative_anchorangle is not None):
+
+        relative_radius = math.hypot(relative_vector_x, relative_vector_y)
+        if relative_radius != 0:
+            relative_angle = math.atan2(relative_vector_x, -relative_vector_y) / math.pi * 180
+            if relative_angle < 0:
+                relative_angle += 360
+        else:
             relative_angle = self.last_relative_anchorangle
+
+        if absolute_angle is None:
+            absolute_angle = relative_angle or .0
+        if relative_angle is None:
+            relative_angle = absolute_angle
 
         return DualAngle(absolute_angle, relative_angle)
 
