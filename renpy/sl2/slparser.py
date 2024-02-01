@@ -100,7 +100,7 @@ class Style(object):
     def __init__(self, name):
         self.name = name
 
-        properties['', True].add(self.name)
+        properties['', True].add(name)
 
         if parser:
             parser.add(self)
@@ -115,13 +115,21 @@ class PrefixStyle(object):
         self.prefix = prefix
         self.name = name
 
-        properties[prefix, True].add(self.name)
+        properties[prefix, True].add(name)
+        update_incompatible_props(prefix, name)
 
         if parser:
             parser.add(self)
 
 
-from renpy.styledata.stylesets import proxy_properties as incompatible_props
+from renpy.styledata.stylesets import proxy_properties
+
+incompatible_props = proxy_properties.copy()
+
+def update_incompatible_props(prefix, prop):
+    res = incompatible_props.get(prop, None)
+    if res is not None:
+        incompatible_props[prefix + prop] = frozenset(prefix + p for p in res)
 
 def check_incompatible_props(new, olds):
     """
@@ -448,7 +456,7 @@ class Parser(object):
                 PrefixStyle(prefix, prop.name)
 
         return self
-    
+
     def copy_properties(self, name):
         global parser
         parser = self
@@ -456,10 +464,10 @@ class Parser(object):
         parser_to_copy = statements.get(name, None)
         if parser_to_copy is None:
             raise Exception("{!r} is not a known screen statement".format(name))
-    
+
         for p in parser_to_copy.positional:
             Positional(p.name)
-        
+
         for v in set(parser_to_copy.keyword.values()):
             if isinstance(v, Keyword):
                 Keyword(v.name)
@@ -578,7 +586,7 @@ def register_sl_displayable(*args, **kwargs):
 
         These correspond to groups of :doc:`style_properties`. Group can
         also be "ui", in which case it adds the :ref:`common ui properties <common-properties>`.
-    
+
     .. method:: copy_properties(name)
 
         Adds all styles and positional/keyword arguments that can be passed to the `name` screen statement.
