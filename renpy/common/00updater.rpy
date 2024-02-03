@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -21,6 +21,9 @@
 
 # This code applies an update.
 init -1500 python in updater:
+    # Do not participate in saves.
+    _constant = True
+
     from store import renpy, config, Action, DictEquality, persistent
     import store.build as build
 
@@ -367,7 +370,8 @@ init -1500 python in updater:
             self.moves = [ ]
 
             if self.allow_empty:
-                os.makedirs(self.updatedir, exist_ok=True)
+                if not os.path.isdir(self.updatedir):
+                    os.makedirs(self.updatedir)
 
             if public_key is not None:
                 with renpy.open_file(public_key, False) as f:
@@ -570,7 +574,6 @@ init -1500 python in updater:
 
             self.write_total = self.u.write_total
             self.write_done = self.u.write_done
-
 
         def rpu_progress(self, state, progress):
             """
@@ -1944,7 +1947,7 @@ init -1500 python in updater:
         :doc: downloader
 
         Starts downloading the game data from `url`. This begins the process
-        of determining what needs to be download, and returns an Update object.
+        of determining what needs to be downloaded, and returns an Update object.
         """
 
         default_kargs = dict(

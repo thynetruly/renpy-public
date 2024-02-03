@@ -1,4 +1,4 @@
-# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -709,6 +709,8 @@ def check_style(name, s):
                 if isinstance(v, renpy.text.font.FontGroup):
                     for f in set(v.map.values()):
                         check_file(name, f, directory="fonts")
+                elif v is None and k.endswith("emoji_font"):
+                    pass
                 else:
                     check_file(name, v, directory="fonts")
 
@@ -940,6 +942,10 @@ def check_unreachables(all_nodes):
             if node.language is not None:
                 to_check.add(node)
 
+        elif isinstance(node, renpy.ast.TranslateSay):
+            if node.language is not None:
+                to_check.add(node)
+
         elif isinstance(node, (renpy.ast.Init, renpy.ast.TranslateBlock)):
             # the block of these ones is always reachable, but their next is reachable only if they are themselves reachable
             add_block(node.block)
@@ -1138,8 +1144,13 @@ def lint():
         elif isinstance(node, renpy.ast.Say):
             check_say(node)
 
-            counts[language].add(node.what)
-            if language is None:
+            if isinstance(node, renpy.ast.TranslateSay):
+                node_language = node.language
+            else:
+                node_language = language
+
+            counts[node_language].add(node.what)
+            if node_language is None:
                 charastats[node.who or 'narrator'].add(node.what)
 
         elif isinstance(node, renpy.ast.Menu):
@@ -1164,13 +1175,6 @@ def lint():
         elif isinstance(node, renpy.ast.Label):
             check_label(node)
 
-        elif isinstance(node, renpy.ast.Translate) and args.orphan_tl:
-            language = node.language
-            if language is None:
-                none_language_ids.add(node.identifier)
-            else:
-                translated_ids[node.identifier].append(node)
-
         elif isinstance(node, renpy.ast.EndTranslate):
             language = None
 
@@ -1192,6 +1196,14 @@ def lint():
         elif isinstance(node, renpy.ast.Transform):
             check_transform(node)
 
+        # This has to be separate, as TranslateSay is a subclass of Say.
+        if isinstance(node, (renpy.ast.Translate, renpy.ast.TranslateSay)) and args.orphan_tl:
+            language = node.language
+            if language is None:
+                none_language_ids.add(node.identifier)
+            else:
+                translated_ids[node.identifier].append(node)
+
     report_node = None
 
     check_styles()
@@ -1203,6 +1215,9 @@ def lint():
         check_orphan_translations(none_language_ids, translated_ids)
 
     check_python_warnings()
+
+    if not renpy.config.check_conflicting_properties:
+        print("It is advised to set config.check_conflicting_properties to True.")
 
     for f in renpy.config.lint_hooks:
         f()

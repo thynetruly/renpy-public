@@ -1,4 +1,4 @@
-# Copyright 2004-2023 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -842,9 +842,6 @@ def web_input(prompt, default='', allow=None, exclude='{}', length=None, mask=Fa
 
     renpy.exports.mode('input')
 
-    # Take the user out of fullscreen during input.
-    renpy.game.preferences.fullscreen = False
-
     prompt = renpy.text.extras.filter_text_tags(prompt, allow=set())
 
     roll_forward = renpy.exports.roll_forward_info()
@@ -1190,6 +1187,7 @@ def display_menu(items,
                  screen="choice",
                  type="menu", # @ReservedAssignment
                  predict_only=False,
+                 _layer=None,
                  **kwargs):
     """
     :doc: se_menu
@@ -1210,6 +1208,14 @@ def display_menu(items,
     `screen`
         The name of the screen used to display the menu.
 
+    `type`
+        May be "menu" or "nvl". If "nvl", the menu is displayed in NVL mode.
+        Otherwise, it is displayed in ADV mode.
+
+    `_layer`
+        The layer to display the menu on. If not given, defaults to :var:`config.choice_layer`
+        for normal choice menus, and :var:`config.nvl_choice_layer` for NVL choice menus.
+
     Note that most Ren'Py games do not use menu captions, but use narration
     instead. To display a menu using narration, write::
 
@@ -1221,6 +1227,7 @@ def display_menu(items,
     screen = menu_kwargs.pop("screen", screen)
     with_none = menu_kwargs.pop("_with_none", with_none)
     mode = menu_kwargs.pop("_mode", type)
+    layer = menu_kwargs.pop("_layer", _layer)
 
     if interact:
         renpy.exports.mode(mode)
@@ -1310,12 +1317,18 @@ def display_menu(items,
 
             item_actions.append(me)
 
+        if layer is None:
+            if type == "nvl":
+                layer = renpy.config.nvl_choice_layer
+            else:
+                layer = renpy.config.choice_layer
+
         show_screen(
             screen,
             items=item_actions,
             _widget_properties=props,
             _transient=True,
-            _layer=renpy.config.choice_layer,
+            _layer=layer,
             *menu_args,
             **scope)
 
@@ -1548,7 +1561,7 @@ def imagemap(ground, selected, hotspots, unselected=None, overlays=False,
 def pause(delay=None, music=None, with_none=None, hard=False, predict=False, checkpoint=None, modal=None):
     """
     :doc: se_pause
-    :args: (delay=None, *, hard=False, predict=False, modal=None)
+    :args: (delay=None, *, predict=False, modal=True, hard=False)
 
     Causes Ren'Py to pause. Returns true if the user clicked to end the pause,
     or false if the pause timed out or was skipped.
@@ -1558,36 +1571,40 @@ def pause(delay=None, music=None, with_none=None, hard=False, predict=False, che
 
     The following should be given as keyword arguments:
 
-    `hard`
-        This must be given as a keyword argument. When True, Ren'Py may prevent
-        the user from clicking to interrupt the pause. If the player enables
-        skipping, the hard pause will be skipped. There may be other circumstances
-        where the hard pause ends early or prevents Ren'Py from operating properly,
-        these will not be treated as bugs.
-
-        In general, using hard pauses is rude. When the user clicks to advance
-        the game, it's an explicit request - the user wishes the game to advance.
-        To override that request is to assume you understand what the player
-        wants more than the player does.
-
-        Calling renpy.pause guarantees that whatever is on the screen will be
-        displayed for at least one frame, and hence has been shown to the
-        player.
-
-        tl;dr - Don't use renpy.pause with hard=True.
-
     `predict`
-        If True, Ren'Py will end the pause when all prediction, including
-        prediction scheduled with :func:`renpy.start_predict` and
-        :func:`renpy.start_predict_screen`, has been finished.
+        If True, when all prediction - including prediction scheduled with
+        :func:`renpy.start_predict` and :func:`renpy.start_predict_screen` - has
+        been finished, the pause will be ended.
 
         This also causes Ren'Py to prioritize prediction over display smoothness
         for the duration of the pause. Because of that, it's recommended to not
         display animations during prediction.
 
+        The pause will still end by other means - when the user clicks or skips,
+        or when the delay expires (if any).
+
     `modal`
-        If True or None, the pause will not end when a modal screen is being displayed.
+        If True, a timed pause will not end (it will hold) when a modal screen
+        is being displayed.
         If False, the pause will end while a modal screen is being displayed.
+
+    `hard`
+        When True, Ren'Py may prevent the user from clicking to interrupt the
+        pause. If the player enables skipping, the hard pause will be skipped.
+        There may be other circumstances where the hard pause ends early or
+        prevents Ren'Py from operating properly, these will not be treated as
+        bugs.
+
+        In general, using hard pauses is rude. When the user clicks to advance
+        the game, it's an explicit request - the user wishes the game to
+        advance. To override that request is to assume you understand what the
+        player wants more than the player does.
+
+        tl;dr - Don't use renpy.pause with hard=True.
+
+    Calling renpy.pause guarantees that whatever is on the screen will be
+    displayed for at least one frame, and hence has been shown to the
+    player.
     """
 
     if renpy.config.skipping == "fast":
@@ -2062,7 +2079,7 @@ def warp_to_line(warp_spec):
     """
 
     renpy.warp.warp_spec = warp_spec
-    renpy.warp.warp()
+    full_restart()
 
 
 def screenshot(filename):
@@ -3001,7 +3018,7 @@ def load_language(language):
     if language is None:
         return
 
-    if renpy.config.defer_tl_scripts:
+    if not renpy.config.defer_tl_scripts:
         return
 
     if language in renpy.game.script.load_languages:
@@ -3232,40 +3249,13 @@ def get_roll_forward():
 
 def cache_pin(*args):
     """
-    :undocumented: Cache pin is deprecated.
+    :undocumented: Cache pinning has been removed.
     """
-
-    new_pins = renpy.revertable.RevertableSet()
-
-    for i in args:
-
-        im = renpy.easy.displayable(i)
-
-        if not isinstance(im, renpy.display.im.ImageBase):
-            raise Exception("Cannot pin non-image-manipulator %r" % im)
-
-        new_pins.add(im)
-
-    renpy.store._cache_pin_set = new_pins | renpy.store._cache_pin_set
-
 
 def cache_unpin(*args):
     """
-    :undocumented: Cache pin is deprecated.
+    :undocumented: Cache pinning has been removed
     """
-
-    new_pins = renpy.revertable.RevertableSet()
-
-    for i in args:
-
-        im = renpy.easy.displayable(i)
-
-        if not isinstance(im, renpy.display.im.ImageBase):
-            raise Exception("Cannot unpin non-image-manipulator %r" % im)
-
-        new_pins.add(im)
-
-    renpy.store._cache_pin_set = renpy.store._cache_pin_set - new_pins
 
 
 def expand_predict(d):
@@ -3639,19 +3629,27 @@ def get_side_image(prefix_tag, image_tag=None, not_showing=None, layer=None):
 
     It begins by determining a set of image attributes. If `image_tag` is
     given, it gets the image attributes from the tag. Otherwise, it gets
-    them from the currently showing character. If no attributes are available
-    for the tag, this returns None.
+    them from the image property suplied to the currently showing character.
+    If no attributes are available, this returns None.
 
-    It then looks up an image with the tag `prefix_tag`, and the image tage (either
-    from `image_tag` or the currently showing character) and the set of image
-    attributes as attributes. If such an image exists, it's returned.
+    It then looks up an image with the tag `prefix_tag`, and attributes
+    consisting of:
 
-    If not_showing is True, this only returns a side image if the image the
-    attributes are taken from is not on the screen. If Nome, the value
-    is taken from :var:`config.side_image_only_not_showing`.
+    * An image tag (either from `image_tag` or the image property supplied
+      to the currently showing character).
+    * The attributes.
 
-    If `layer` is None, uses the default layer for the currently showing
-    tag.
+    If such an image exists, it's returned.
+
+    `not_showing`
+        If not showing is True, this only returns a side image if an image
+        with the tag that the attributes are taken from is not currently
+        being shown. If False, it will always return an image, if possible.
+        If None, takes the value from :var:`config.side_image_only_not_showing`.
+
+    `layer`
+        If given, the layer to look for the image tag and attributes on. If
+        None, uses the default layer for the tag.
     """
 
     if not_showing is None:
@@ -3667,6 +3665,9 @@ def get_side_image(prefix_tag, image_tag=None, not_showing=None, layer=None):
             return None
 
     else:
+
+        # Character will compute the appropriate attributes, and stores it
+        # in _side_image_attributes.
         attrs = renpy.store._side_image_attributes
 
     if not attrs:
@@ -4510,13 +4511,9 @@ def get_sdl_dll():
     """
     :doc: sdl
 
-    This returns a ctypes.cdll object that refers to the library that contains
-    the instance of SDL2 that Ren'Py is using.
-
-    If this can not be done, None is returned.
+    Returns a ctypes.cdll object that refers to the library that contains
+    the instance of SDL2 that Ren'Py is using. If this fails, None is returned.
     """
-
-
 
     global sdl_dll
 
@@ -4554,15 +4551,17 @@ def get_sdl_window_pointer():
     """
     :doc: sdl
 
-    Returns a pointer (of type ctypes.c_void_p) to the main window, or None
-    if the main window is not displayed, or some other problem occurs.
+    :rtype: ctypes.c_void_p | None
+
+    Returns a pointer to the main window, or None if the main window is not
+    displayed (or some other problem occurs).
     """
 
     try:
         window = pygame_sdl2.display.get_window()
 
         if window is None:
-            return
+            return None
 
         return window.get_sdl_window_pointer()
 
@@ -4883,3 +4882,14 @@ def fetch(url, method=None, data=None, json=None, content_type=None, timeout=5, 
         return content.decode("utf-8")
     elif result == "json":
         return _json.loads(content)
+
+
+def can_fullscreen():
+    """
+    :doc: other
+
+    Returns True if the current platform supports fullscreen mode, False
+    otherwise.
+    """
+
+    return renpy.display.can_fullscreen
