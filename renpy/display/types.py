@@ -138,34 +138,29 @@ class position(object):
 
     __slots__ = ('absolute', 'relative')
 
-    def __new__(cls, absolute=0, relative=None):
-        """
-        If passed two parameters, takes them as an absolute and a relative.
-        If passed only one parameter, converts it.
-        If passed only None, returns None.
-        Using __new__ so that passing a position returns it unchanged.
-        """
-
-        if relative is None:
-            if absolute is None:
-                return None
-
-            typ = type(absolute)
-
-            if typ is cls:
-                return absolute
-
-            if typ is float:
-                relative = absolute
-                absolute = 0
-            else:
-                relative = 0
-
-        self = object.__new__(cls)
+    def __init__(self, absolute, relative):
         self.absolute = absolute
         self.relative = relative
 
-        return self
+    @classmethod
+    def from_any(cls, value):
+        """
+        Converts a position-at-large value into an instance of position.
+        Returns a position object unchanged.
+        If passed None, returns None.
+        """
+        if value is None:
+            return None
+
+        typ = type(value)
+
+        if typ is cls:
+            return value
+
+        if typ is float:
+            return cls(absolute=0, relative=value)
+        else:
+            return cls(absolute=value, relative=0)
 
     def __add__(self, other):
         if isinstance(other, position):
