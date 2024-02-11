@@ -104,10 +104,10 @@ def interpolate(t, a, b, typ):
     # Interpolate everything else.
     else:
 
-        if typ is position:
+        if typ in (position, position.from_any):
             if renpy.config.mixed_position:
-                a = position(a)
-                b = position(b)
+                a = position.from_any(a)
+                b = position.from_any(b)
             else:
                 typ = type(b)
 
@@ -128,8 +128,9 @@ def interpolate_spline(t, spline, typ):
     if spline[0] is None:
         return spline[-1]
 
-    if typ is position and renpy.config.mixed_position:
-        spline = [position(i) for i in spline]
+    if typ in (position, position.from_any) and renpy.config.mixed_position:
+        typ = position.from_any
+        spline = [position.from_any(i) for i in spline]
 
     lenspline = len(spline)
 
@@ -181,6 +182,8 @@ def interpolate_spline(t, spline, typ):
     if rv is None:
         return None
 
+    if typ is position.from_any:
+        return position.from_any(rv)
     return type(spline[-1])(rv)
 
 

@@ -324,10 +324,10 @@ class TransformState(renpy.object.Object):
         and the first element of each tuple is in x and the second in y.
         They represent the vector from the anchoraround point to the final anchor point.
         """
-        xanchoraround = position(self.xanchoraround)
-        yanchoraround = position(self.yanchoraround)
-        xanchor = position(first_not_none(self.xanchor, self.inherited_xanchor, 0))
-        yanchor = position(first_not_none(self.yanchor, self.inherited_yanchor, 0))
+        xanchoraround = position.from_any(self.xanchoraround)
+        yanchoraround = position.from_any(self.yanchoraround)
+        xanchor = position.from_any(first_not_none(self.xanchor, self.inherited_xanchor, 0))
+        yanchor = position.from_any(first_not_none(self.yanchor, self.inherited_yanchor, 0))
 
         absolute_vector = (xanchor.absolute-xanchoraround.absolute, yanchor.absolute-yanchoraround.absolute)
         relative_vector = (xanchor.relative-xanchoraround.relative, yanchor.relative-yanchoraround.relative)
@@ -399,7 +399,7 @@ class TransformState(renpy.object.Object):
         and set xanchor and yanchor such that the anchorangle stays the same,
         and the anchorradius (as explained above) is the given one.
         """
-        anchorradius = position(anchorradius)
+        anchorradius = position.from_any(anchorradius)
 
         polar_vectors = self.get_anchor_polar_vector()
         anchorangle = self.get_anchorangle(polar_vectors)
@@ -427,8 +427,8 @@ class TransformState(renpy.object.Object):
             relative_anchorradius,
         ):
 
-        xanchoraround = position(self.xanchoraround)
-        yanchoraround = position(self.yanchoraround)
+        xanchoraround = position.from_any(self.xanchoraround)
+        yanchoraround = position.from_any(self.yanchoraround)
 
         absolute_anchorangle = absolute_anchorangle * math.pi / 180
         relative_anchorangle = relative_anchorangle * math.pi / 180
@@ -1205,15 +1205,15 @@ add_property("additive", float, 0.0)
 add_property("alpha", float, 1.0)
 add_property("blend", any_object, None)
 add_property("blur", float_or_none, None)
-add_property("corner1", (position, position), None)
-add_property("corner2", (position, position), None)
-add_property("crop", (position, position, position, position), None)
+add_property("corner1", (position.from_any, position.from_any), None)
+add_property("corner2", (position.from_any, position.from_any), None)
+add_property("crop", (position.from_any, position.from_any, position.from_any, position.from_any), None)
 add_property("crop_relative", bool_or_none, None)
 add_property("debug", any_object, None)
 add_property("delay", float, 0)
 add_property("events", bool, True)
 add_property("fit", str, None)
-add_property("matrixanchor", (position, position), None)
+add_property("matrixanchor", (position.from_any, position.from_any), None)
 add_property("matrixcolor", matrix, None)
 add_property("matrixtransform", matrix, None)
 add_property("maxsize", (int, int), None)
@@ -1234,23 +1234,23 @@ add_property("subpixel", bool, False)
 add_property("transform_anchor", bool, False)
 add_property("zoom", float, 1.0)
 
-add_property("xanchoraround", position, 0.5)
-add_property("xanchor", position, None, diff=4)
-add_property("xaround", position, 0.0)
+add_property("xanchoraround", position.from_any, 0.5)
+add_property("xanchor", position.from_any, None, diff=4)
+add_property("xaround", position.from_any, 0.0)
 add_property("xoffset", absolute, 0.0)
 add_property("xpan", float_or_none, None)
-add_property("xpos", position, None, diff=4)
-add_property("xsize", position, None)
+add_property("xpos", position.from_any, None, diff=4)
+add_property("xsize", position.from_any, None)
 add_property("xtile", int, 1)
 add_property("xzoom", float, 1.0)
 
-add_property("yanchoraround", position, 0.5)
-add_property("yanchor", position, None, diff=4)
-add_property("yaround", position, 0.0)
+add_property("yanchoraround", position.from_any, 0.5)
+add_property("yanchor", position.from_any, None, diff=4)
+add_property("yaround", position.from_any, 0.0)
 add_property("yoffset", absolute, 0.0)
 add_property("ypan", float_or_none, None)
-add_property("ypos", position, None, diff=4)
-add_property("ysize", position, None)
+add_property("ypos", position.from_any, None, diff=4)
+add_property("ysize", position.from_any, None)
 add_property("ytile", int, 1)
 add_property("yzoom", float, 1.0)
 
@@ -1269,23 +1269,23 @@ add_gl_property("gl_texture_wrap")
 
 ALIASES = {
     "alignaround" : (float, float),
-    "align" : (position, position), # documented as (float, float)
-    "anchor" : (position, position),
+    "align" : (position.from_any, position.from_any), # documented as (float, float)
+    "anchor" : (position.from_any, position.from_any),
     "anchorangle" : dualangle,
-    "anchoraround" : (position, position),
-    "anchorradius" : position,
+    "anchoraround" : (position.from_any, position.from_any),
+    "anchorradius" : position.from_any,
     "angle" : float,
-    "around" : (position, position),
+    "around" : (position.from_any, position.from_any),
     "offset" : (absolute, absolute),
-    "pos" : (position, position),
-    "radius" : position,
+    "pos" : (position.from_any, position.from_any),
+    "radius" : position.from_any,
     "size" : (int, int),
-    "xalign" : position, # documented as float,
-    "xcenter" : position,
-    "xycenter" : (position, position),
-    "xysize" : (position, position),
-    "yalign" : position, # documented as float
-    "ycenter" : position,
+    "xalign" : position.from_any, # documented as float,
+    "xcenter" : position.from_any,
+    "xycenter" : (position.from_any, position.from_any),
+    "xysize" : (position.from_any, position.from_any),
+    "yalign" : position.from_any, # documented as float
+    "ycenter" : position.from_any,
 }
 
 renpy.atl.PROPERTIES.update(ALIASES)
