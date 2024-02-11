@@ -29,12 +29,13 @@ import pygame_sdl2 as pygame
 
 import renpy
 from renpy.display.render import render, Render
+from renpy.display.types import absolute
 
 if PY2:
     def compute_raw(value, room):
-        return renpy.display.types.absolute.compute_raw(value, room)
+        return absolute.compute_raw(value, room)
 else:
-    compute_raw = renpy.display.types.absolute.compute_raw
+    compute_raw = absolute.compute_raw
 
 
 def xyminimums(style, width, height):
