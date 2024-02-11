@@ -402,13 +402,13 @@ class MoveInterpolate(renpy.display.displayable.Displayable):
         (except subpixel which is boolean)
         """
 
-        pixels = renpy.types.pixels
+        absolute = renpy.types.absolute
 
         def based(v, base):
             if v is None:
                 return 0
             else:
-                return pixels(v, base)
+                return absolute.compute_raw(v, base)
 
         xpos, ypos, xanchor, yanchor, xoffset, yoffset, subpixel = child.get_placement()
 

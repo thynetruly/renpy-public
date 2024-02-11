@@ -59,6 +59,23 @@ class absolute(float):
     def __repr__(self):
         return "absolute({})".format(float.__repr__(self))
 
+    @staticmethod
+    def compute_raw(value, room):
+        """
+        Converts a position from one of the many supported position types
+        into an absolute number of pixels, without regard for the return type.
+        """
+
+        typ = type(value)
+
+        if typ is float:
+            return value * room
+
+        if typ is position:
+            return value.relative * room + value.absolute
+
+        return value
+
 
 for fn in (
     '__coerce__', # PY2
@@ -300,20 +317,3 @@ def mesh(x):
         return x
 
     return bool(x)
-
-
-def pixels(value, room):
-    """
-    Converts a position from one of the many supported position types
-    into an absolute number of pixels, without regard for the return type.
-    """
-
-    typ = type(value)
-
-    if typ is float:
-        return value * room
-
-    if typ is position:
-        return value.relative * room + value.absolute
-
-    return value
