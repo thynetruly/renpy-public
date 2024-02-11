@@ -31,6 +31,7 @@ import math
 import renpy
 from renpy.display.render import render
 from renpy.display.layout import Container
+from renpy.display.types import absolute, position
 
 # Some imports are here to handle pickles of a moved class.
 from renpy.display.transform import Transform, Proxy, TransformState, ATLTransform, null  # @UnusedImport
@@ -211,7 +212,7 @@ class Interpolate(object):
 
     def __call__(self, t, sizes=(None, None, None, None)):
 
-        return renpy.atl.interpolate(t, tuple(self.start), tuple(self.end), renpy.types.position)
+        return renpy.atl.interpolate(t, tuple(self.start), tuple(self.end), position.from_any)
 
 
 def Pan(startpos, endpos, time, child=None, repeat=False, bounce=False,
@@ -318,8 +319,6 @@ class Revolver(object):
         self.child = child
 
     def __call__(self, t, rect):
-        absolute = renpy.types.absolute
-
         (w, h, cw, ch) = rect
 
         # Converts a float to an integer in the given range, passes

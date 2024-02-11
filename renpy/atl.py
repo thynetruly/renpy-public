@@ -129,7 +129,6 @@ def interpolate_spline(t, spline, typ):
         return spline[-1]
 
     if typ in (position, position.from_any) and renpy.config.mixed_position:
-        typ = position.from_any
         spline = [position.from_any(i) for i in spline]
 
     lenspline = len(spline)
@@ -182,8 +181,6 @@ def interpolate_spline(t, spline, typ):
     if rv is None:
         return None
 
-    if typ is position.from_any:
-        return position.from_any(rv)
     return type(spline[-1])(rv)
 
 
@@ -1446,7 +1443,7 @@ class Interpolation(Statement):
 
         if radii is not None:
             startradius, endradius = radii
-            trans.state.radius = interpolate(complete, startradius, endradius, position)
+            trans.state.radius = interpolate(complete, startradius, endradius, position.from_any)
 
         if anchorangles is not None:
             startangle, endangle = anchorangles[:2]
@@ -1456,7 +1453,7 @@ class Interpolation(Statement):
 
         if anchorradii is not None:
             startradius, endradius = anchorradii
-            trans.state.anchorradius = interpolate(complete, startradius, endradius, position)
+            trans.state.anchorradius = interpolate(complete, startradius, endradius, position.from_any)
 
 
 

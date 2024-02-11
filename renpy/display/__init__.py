@@ -105,5 +105,6 @@ if 1 == 0:
     from . import transform
     from . import transition
     from . import tts
+    from . import types
     from . import video
     from . import viewport

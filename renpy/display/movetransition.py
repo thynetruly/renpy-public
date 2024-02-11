@@ -30,6 +30,7 @@ from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, r
 
 
 import renpy
+from renpy.display.types import absolute
 
 # Utility function used by MoveTransition et al.
 def position(d):
@@ -402,8 +403,6 @@ class MoveInterpolate(renpy.display.displayable.Displayable):
         (except subpixel which is boolean)
         """
 
-        absolute = renpy.types.absolute
-
         def based(v, base):
             if v is None:
                 return 0
@@ -428,8 +427,6 @@ class MoveInterpolate(renpy.display.displayable.Displayable):
 
         if self.time_warp is not None:
             done = self.time_warp(done)
-
-        absolute = renpy.types.absolute
 
         def I(a, b):
             return absolute(a + done * (b - a))
