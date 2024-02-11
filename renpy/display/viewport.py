@@ -30,7 +30,7 @@ import math
 
 import pygame_sdl2 as pygame
 import renpy
-from renpy.types import pixels
+from renpy.display.types import pixels
 
 
 def edgescroll_proportional(n):

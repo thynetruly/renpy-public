@@ -28,7 +28,7 @@ from typing import Any
 import renpy
 import renpy.gl2.live2dmotion
 from renpy.gl2.gl2shadercache import register_shader
-from renpy.types import pixels
+from renpy.display.types import pixels
 
 try:
     import renpy.gl2.live2dmodel as live2dmodel

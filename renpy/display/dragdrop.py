@@ -31,7 +31,7 @@ import pygame_sdl2 as pygame
 import renpy
 from renpy.display.render import render, Render, redraw
 from renpy.display.behavior import map_event, run, run_unhovered
-from renpy.types import absolute, pixels
+from renpy.display.types import absolute, pixels
 
 import weakref
 

@@ -26,7 +26,7 @@ import random
 
 import renpy
 from renpy.pyanalysis import Analysis, NOT_CONST, GLOBAL_CONST
-from renpy.types import DualAngle, dualangle, position
+from renpy.display.types import DualAngle, dualangle, position
 
 
 def compiling(loc):

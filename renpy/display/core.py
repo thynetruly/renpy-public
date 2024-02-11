@@ -38,7 +38,7 @@ import renpy
 
 from renpy.display.displayable import Displayable, DisplayableArguments, place
 from renpy.display.scenelists import SceneListEntry, SceneLists
-from renpy.types import absolute # @UnusedImport
+from renpy.display.types import absolute # @UnusedImport
 
 
 import_time = time.time()
