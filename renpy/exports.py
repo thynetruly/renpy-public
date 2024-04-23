@@ -25,6 +25,7 @@
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals # type: ignore
 from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
+import collections
 import gc
 import io
 import re
@@ -4964,3 +4965,24 @@ def can_fullscreen():
     """
 
     return renpy.display.can_fullscreen
+
+def convert_container(o):
+    """
+    Recursively replaces mutable python containers with their revertable equivalents.
+    (dict, defaultdict, list and set)
+    """
+    if isinstance(o, dict):
+        if isinstance(o, collections.defaultdict):
+            rv = renpy.revertable.RevertableDefaultDict(o.default_factory)
+        else:
+            rv = renpy.revertable.RevertableDict()
+        rv.update(zip(o.keys(), map(convert_container, o.values())))
+        return rv
+
+    if isinstance(o, list):
+        ty = renpy.revertable.RevertableList
+    elif isinstance(o, set):
+        ty = renpy.revertable.RevertableSet
+    else:
+        return o
+    return ty(map(convert_container, o))
