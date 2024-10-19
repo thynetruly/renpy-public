@@ -1,112 +1,57 @@
 # Software Engineering Architectural Design Document
 
-# Executive Summary
-
-This Software Engineering Architectural Design Document outlines the comprehensive plan for integrating the Live2D Cubism SDK with the Ren'Py visual novel engine. The integration aims to enhance Ren'Py projects with dynamic and expressive character animations using Live2D models.
-
-Key aspects of the integration plan include:
-
-1. Detailed analysis of both Ren'Py and Live2D Cubism SDK codebases
-2. Proposed modular architecture for seamless integration
-3. Comprehensive implementation strategies for core functionalities
-4. Performance optimization techniques and cross-platform compatibility considerations
-5. Robust testing strategies and error handling mechanisms
-6. Guidelines for documentation, coding standards, and future enhancements
-
-This document serves as a strategic roadmap for developers, providing in-depth technical guidance to ensure a successful integration that leverages the strengths of both Ren'Py and Live2D Cubism SDK.
-
-
-## Project Timeline and Milestones
-
-This section outlines the proposed timeline and key milestones for the Live2D Cubism SDK integration with Ren'Py.
-
-1. **Phase 1: Initial Analysis and Setup (Weeks 1-2)**
-   - Complete repository analysis
-   - Set up development environment
-   - Finalize project structure
-
-2. **Phase 2: Core Integration (Weeks 3-6)**
-   - Implement basic model loading and rendering
-   - Develop animation control system
-   - Integrate lip sync functionality
-
-3. **Phase 3: Advanced Features (Weeks 7-10)**
-   - Implement physics simulations
-   - Develop shader system
-   - Create particle system
-
-4. **Phase 4: Optimization and Testing (Weeks 11-13)**
-   - Perform performance optimizations
-   - Conduct thorough testing (unit, integration, cross-platform)
-   - Address identified issues and bugs
-
-5. **Phase 5: Documentation and Refinement (Weeks 14-15)**
-   - Complete API documentation
-   - Refine user guides and examples
-   - Conduct final review and adjustments
-
-6. **Phase 6: Release and Support (Week 16)**
-   - Prepare for initial release
-   - Set up support channels and documentation portals
-
-Note: This timeline is subject to adjustment based on project progress and any unforeseen challenges.
-
 ## Table of Contents
 
-1. [Introduction](#1-introduction)
-2. [Repository Analysis](#2-repository-analysis)
-   2.1 [Ren'Py GitHub Repository](#21-renpy-github-repository)
-   2.2 [Live2D Cubism SDK](#22-live2d-cubism-sdk)
-3. [Project Structure Analysis](#3-project-structure-analysis)
-   3.1 [Ren'Py Project Structure](#31-renpy-project-structure)
-   3.2 [Live2D Cubism SDK Project Structure](#32-live2d-cubism-sdk-project-structure)
-   3.3 [Optimized Integrated Project Structure](#33-optimized-integrated-project-structure)
-   3.4 [UML Diagram of Integrated Architecture](#34-uml-diagram-of-integrated-architecture)
-   3.5 [Recommendations for Project Structure Improvements](#35-recommendations-for-project-structure-improvements)
-4. [Code Purpose and Functionality Summary](#4-code-purpose-and-functionality-summary)
-5. [Bug Identification and Potential Improvements](#5-bug-identification-and-potential-improvements)
-6. [Discrepancies and Redundancies Addressed](#6-discrepancies-and-redundancies-addressed)
-7. [Integration with Ren'Py and Live2D Cubism Systems](#7-integration-with-renpy-and-live2d-cubism-systems)
-8. [Code Modification Suggestions](#8-code-modification-suggestions)
-9. [Performance Optimization and Compatibility](#9-performance-optimization-and-compatibility)
-10. [Code Translation from Non-Python to Python](#10-code-translation-from-non-python-to-python)
-11. [Component Listing and Interactions](#11-component-listing-and-interactions)
-12. [Python Code Snippets for Key Functions](#12-python-code-snippets-for-key-functions)
-13. [Integration with Existing Ren'Py Systems](#13-integration-with-existing-renpy-systems)
-14. [Performance Bottlenecks and Optimizations](#14-performance-bottlenecks-and-optimizations)
-15. [Cross-Platform Compatibility](#15-cross-platform-compatibility)
-16. [Implementation of Cubism Core API and Live2D Cubism SDK](#16-implementation-of-cubism-core-api-and-live2d-cubism-sdk)
-17. [Model Loading, Rendering, and Animation](#17-model-loading-rendering-and-animation)
-18. [Automatic Eye Blinking and Mouth Movement](#18-automatic-eye-blinking-and-mouth-movement)
-19. [Physics Simulation](#19-physics-simulation)
-20. [User Data Handling](#20-user-data-handling)
-21. [Shader System Development](#21-shader-system-development)
-22. [Particle System Implementation](#22-particle-system-implementation)
-23. [Rendering Pipeline Blend Modes Support](#23-rendering-pipeline-blend-modes-support)
-24. [Shader Parameter Adjustment Interfaces](#24-shader-parameter-adjustment-interfaces)
-25. [Voiceover System with Lip Sync and Visemes](#25-voiceover-system-with-lip-sync-and-visemes)
-26. [Phoneme Extraction from Audio Files](#26-phoneme-extraction-from-audio-files)
-27. [Cursor Tracking for Interactive Elements](#27-cursor-tracking-for-interactive-elements)
-28. [Expression System for Characters](#28-expression-system-for-characters)
-29. [Localization and Translation Improvements](#29-localization-and-translation-improvements)
-30. [Performance Bottlenecks and Optimization Strategies](#30-performance-bottlenecks-and-optimization-strategies)
-31. [Integration Plan with Ren'Py Codebase](#31-integration-plan-with-renpy-codebase)
-32. [Testing Strategies](#32-testing-strategies)
-33. [Impact on Other Ren'Py Systems and Mitigation](#33-impact-on-other-renpy-systems-and-mitigation)
-34. [Error Handling and Debugging Strategies](#34-error-handling-and-debugging-strategies)
-35. [API Reference with Code Examples](#35-api-reference-with-code-examples)
-36. [Example Ren'Py Scripts Demonstrating Live2D Features](#36-example-renpy-scripts-demonstrating-live2d-features)
-37. [Documentation and Commenting Standards](#37-documentation-and-commenting-standards)
-38. [Step-by-Step Coding Guidelines](#38-step-by-step-coding-guidelines)
-39. [Key Challenges and Solutions](#39-key-challenges-and-solutions)
-40. [Remaining Concerns and Issues](#40-remaining-concerns-and-issues)
-41. [Process Improvements for Future Features](#41-process-improvements-for-future-features)
-42. [Areas for Further Enhancement](#42-areas-for-further-enhancement)
-43. [Final Recommendations](#43-final-recommendations)
-44. [Review and Refinement](#44-review-and-refinement)
-## 1. Introduction
+1. [Introduction](#introduction)
+2. [Repository Analysis](#repository-analysis)
+   - [2.1 Ren'Py GitHub Repository](#21-renpy-github-repository)
+   - [2.2 Live2D Cubism SDK](#22-live2d-cubism-sdk)
+3. [Project Structure Analysis](#project-structure-analysis)
+4. [Code Purpose and Functionality Summary](#code-purpose-and-functionality-summary)
+5. [Bug Identification and Potential Improvements](#bug-identification-and-potential-improvements)
+6. [Discrepancies and Redundancies Addressed](#discrepancies-and-redundancies-addressed)
+7. [Integration with Ren'Py and Live2D Cubism Systems](#integration-with-renpy-and-live2d-cubism-systems)
+8. [Code Modification Suggestions](#code-modification-suggestions)
+9. [Performance Optimization and Compatibility](#performance-optimization-and-compatibility)
+10. [Code Translation from Non-Python to Python](#code-translation-from-non-python-to-python)
+11. [Component Listing and Interactions](#component-listing-and-interactions)
+12. [Python Code Snippets for Key Functions](#python-code-snippets-for-key-functions)
+13. [Integration with Existing Ren'Py Systems](#integration-with-existing-renpy-systems)
+14. [Performance Bottlenecks and Optimizations](#performance-bottlenecks-and-optimizations)
+15. [Cross-Platform Compatibility](#cross-platform-compatibility)
+16. [Implementation of Cubism Core API and Live2D Cubism SDK](#implementation-of-cubism-core-api-and-live2d-cubism-sdk)
+17. [Model Loading, Rendering, and Animation](#model-loading-rendering-and-animation)
+18. [Automatic Eye Blinking and Mouth Movement](#automatic-eye-blinking-and-mouth-movement)
+19. [Physics Simulation](#physics-simulation)
+20. [User Data Handling](#user-data-handling)
+21. [Shader System Development](#shader-system-development)
+22. [Particle System Implementation](#particle-system-implementation)
+23. [Rendering Pipeline Blend Modes Support](#rendering-pipeline-blend-modes-support)
+24. [Shader Parameter Adjustment Interfaces](#shader-parameter-adjustment-interfaces)
+25. [Voiceover System with Lip Sync and Visemes](#voiceover-system-with-lip-sync-and-visemes)
+26. [Phoneme Extraction from Audio Files](#phoneme-extraction-from-audio-files)
+27. [Cursor Tracking for Interactive Elements](#cursor-tracking-for-interactive-elements)
+28. [Expression System for Characters](#expression-system-for-characters)
+29. [Localization and Translation Improvements](#localization-and-translation-improvements)
+30. [Performance Bottlenecks and Optimization Strategies](#performance-bottlenecks-and-optimization-strategies)
+31. [Integration Plan with Ren'Py Codebase](#integration-plan-with-renpy-codebase)
+32. [Testing Strategies](#testing-strategies)
+33. [Impact on Other Ren'Py Systems and Mitigation](#impact-on-other-renpy-systems-and-mitigation)
+34. [Error Handling and Debugging Strategies](#error-handling-and-debugging-strategies)
+35. [API Reference with Code Examples](#api-reference-with-code-examples)
+36. [Example Ren'Py Scripts Demonstrating Live2D Features](#example-renpy-scripts-demonstrating-live2d-features)
+37. [Documentation and Commenting Standards](#documentation-and-commenting-standards)
+38. [Step-by-Step Coding Guidelines](#step-by-step-coding-guidelines)
+39. [Key Challenges and Solutions](#key-challenges-and-solutions)
+40. [Remaining Concerns and Issues](#remaining-concerns-and-issues)
+41. [Process Improvements for Future Features](#process-improvements-for-future-features)
+42. [Areas for Further Enhancement](#areas-for-further-enhancement)
+43. [Final Recommendations](#final-recommendations)
+44. [Review and Refinement](#review-and-refinement)
 
-[Related sections: [2. Section 2](#2-section-2), [3. Project Structure Analysis](#3-project-structure-analysis)]
+---
+
+## 1. Introduction
 
 **Objective:**  
 This Software Engineering Architectural Design Document outlines a comprehensive implementation plan for integrating the Live2D Cubism SDK with the Ren'Py visual novel engine. The document serves as a guide for an AI coding assistant, detailing each step required to analyze, enhance, and optimize the integration process. The primary objectives include analyzing existing repositories, identifying and addressing code inefficiencies, optimizing performance, ensuring cross-platform compatibility, and developing advanced features such as automatic eye blinking, mouth movement, physics simulation, and a robust shader system.
@@ -288,9 +233,6 @@ Explain how the Live2D Cubism SDK will integrate with the larger Ren'Py system, 
 This document will continue to elaborate on each of the listed tasks, providing detailed implementation plans, code examples, and optimization strategies. Please let me know if you would like me to proceed with the subsequent sections or focus on any specific area in greater detail.
 
 ## 3. Project Structure Analysis
-
-
-[Related sections: [2. Section 2](#2-section-2), [4. Code Purpose and Functionality Summary](#4-code-purpose-and-functionality-summary), [5. Bug Identification and Potential Improvements](#5-bug-identification-and-potential-improvements)]
 
 **Objective:**  
 Analyze the existing project structures of both Ren'Py and the Live2D Cubism SDK to design an optimized architecture for their integration. This analysis aims to identify potential improvements, streamline workflows, and ensure scalability and maintainability of the combined system.
@@ -811,7 +753,7 @@ renpy_project/
 │           └── ukrainian/
 └── unittests/
 ```
-    
+
 **Key Components:**
 
 - **.git/**: Contains the Git repository's configuration, hooks, objects, references, and internal data.
@@ -941,7 +883,7 @@ CubismSdkForNative-5-r.1/
     ├── Resources/
     └── Vulkan/
 ```
-    
+
 **Key Components:**
 
 - **Core/**: Manages fundamental components including dynamic link libraries (DLLs) for various platforms, header files, and library files.
@@ -1005,7 +947,7 @@ integrated_project/
 │       └── ci.yml
 └── README.md
 ```
-    
+
 **Key Enhancements:**
 
 - **Integrated SDK:** The Live2D Cubism SDK is housed within the `sdk/` directory, keeping third-party libraries separate from game logic and assets.
@@ -1020,7 +962,7 @@ integrated_project/
 ### 3.4 UML Diagram of Integrated Architecture
 
 ```mermaid
-    classDiagram
+classDiagram
     class RenPyCore {
         +render()
         +handle_input()
@@ -1073,7 +1015,7 @@ integrated_project/
     Live2DIntegration --> AssetManager
     Live2DIntegration --> EventManager
 ```
-    
+
 **Diagram Explanation:**  
 The UML class diagram illustrates the relationship between Ren'Py’s core functionalities and the integrated Live2D components. `RenPyCore` interacts with the `Live2DIntegration` module, which in turn manages various Live2D-specific functionalities such as model loading, animation control, lip synchronization, physics handling, shader management, asset management, and event management.
 
@@ -1167,16 +1109,13 @@ integrated_project/
 │       └── ci.yml
 └── README.md
 ```
-    
+
 **Conclusion:**  
 By implementing an optimized and well-organized project structure, the integration of the Live2D Cubism SDK with Ren'Py can be achieved smoothly. The proposed enhancements focus on modularity, scalability, consistency, and maintainability, ensuring that the integrated system remains robust and adaptable to future developments.
 
 ---
 
 ## 4. Code Purpose and Functionality Summary
-
-
-[Related sections: [3. Project Structure Analysis](#3-project-structure-analysis), [5. Bug Identification and Potential Improvements](#5-bug-identification-and-potential-improvements), [6. Discrepancies and Redundancies Addressed](#6-discrepancies-and-redundancies-addressed)]
 
 **Objective:**  
 Summarize the purpose and functionality of the existing codebases of Ren'Py and the Live2D Cubism SDK to identify key integration points and areas requiring enhancements.
@@ -1353,9 +1292,6 @@ By thoroughly understanding the purposes and functionalities of both Ren'Py and 
 
 ## 5. Bug Identification and Potential Improvements
 
-
-[Related sections: [4. Code Purpose and Functionality Summary](#4-code-purpose-and-functionality-summary), [6. Discrepancies and Redundancies Addressed](#6-discrepancies-and-redundancies-addressed), [14. Performance Bottlenecks and Optimizations](#14-performance-bottlenecks-and-optimizations)]
-
 **Objective:**  
 Identify existing bugs, inefficiencies, and opportunities for improvement within the Ren'Py and Live2D Cubism SDK codebases to ensure a robust integration. This section outlines potential issues and proposes strategies to enhance code quality, performance, and maintainability.
 
@@ -1449,9 +1385,6 @@ Identifying and addressing bugs and inefficiencies within both the Ren'Py and Li
 
 ## 6. Discrepancies and Redundancies Addressed
 
-
-[Related sections: [5. Bug Identification and Potential Improvements](#5-bug-identification-and-potential-improvements), [7. Integration with Ren'Py and Live2D Cubism Systems](#7-integration-with-ren'py-and-live2d-cubism-systems)]
-
 **Objective:**  
 Address any discrepancies, redundancies, issues, and inadequacies identified during the analysis to streamline the integration process. This section outlines strategies to harmonize codebases, eliminate inefficiencies, and ensure consistency between Ren'Py and Live2D components.
 
@@ -1525,9 +1458,6 @@ Addressing discrepancies and redundancies is essential for creating a cohesive a
 
 ## 7. Integration with Ren'Py and Live2D Cubism Systems
 
-
-[Related sections: [6. Discrepancies and Redundancies Addressed](#6-discrepancies-and-redundancies-addressed), [8. Code Modification Suggestions](#8-code-modification-suggestions), [13. Integration with Existing Ren'Py Systems](#13-integration-with-existing-ren'py-systems)]
-
 **Objective:**  
 Detail the strategies and methodologies for seamlessly integrating the Live2D Cubism SDK with the Ren'Py visual novel engine, ensuring that both systems work in harmony to deliver a cohesive and enhanced user experience.
 
@@ -1598,7 +1528,7 @@ Detail the strategies and methodologies for seamlessly integrating the Live2D Cu
 ### **UML Diagram Integration:**
 
 ````mermaid
-    classDiagram
+classDiagram
     class RenPyCore {
         +render()
         +handle_input()
@@ -1651,7 +1581,7 @@ Detail the strategies and methodologies for seamlessly integrating the Live2D Cu
     Live2DIntegration --> AssetManager
     Live2DIntegration --> EventManager
 ````
-    
+
 **Diagram Explanation:**  
 The UML class diagram illustrates the relationship between Ren'Py’s core functionalities and the integrated Live2D components. `RenPyCore` interacts with the `Live2DIntegration` module, which in turn manages various Live2D-specific functionalities such as model loading, animation control, lip synchronization, physics handling, shader management, asset management, and event management.
 
@@ -1752,9 +1682,6 @@ Integrating the Live2D Cubism SDK with Ren'Py involves establishing clear commun
 
 ## 8. Code Modification Suggestions
 
-
-[Related sections: [7. Integration with Ren'Py and Live2D Cubism Systems](#7-integration-with-ren'py-and-live2d-cubism-systems), [9. Performance Optimization and Compatibility](#9-performance-optimization-and-compatibility)]
-
 **Objective:**  
 Provide specific suggestions for modifying the existing Ren'Py and Live2D Cubism SDK codebases to facilitate seamless integration, enhance functionality, and improve maintainability.
 
@@ -1799,9 +1726,6 @@ Provide specific suggestions for modifying the existing Ren'Py and Live2D Cubism
 
 ## 9. Performance Optimization and Compatibility
 
-
-[Related sections: [8. Code Modification Suggestions](#8-code-modification-suggestions), [14. Performance Bottlenecks and Optimizations](#14-performance-bottlenecks-and-optimizations), [15. Cross-Platform Compatibility](#15-cross-platform-compatibility)]
-
 **Objective:**  
 Optimize the integrated system for high performance and ensure compatibility across various platforms and devices, including both desktop and mobile environments.
 
@@ -1845,9 +1769,6 @@ Optimize the integrated system for high performance and ensure compatibility acr
 ---
 
 ## 10. Code Translation from Non-Python to Python
-
-
-[Related sections: [9. Performance Optimization and Compatibility](#9-performance-optimization-and-compatibility), [11. Component Listing and Interactions](#11-component-listing-and-interactions)]
 
 **Objective:**  
 Translate existing non-Python components of the Live2D Cubism SDK into Python to ensure seamless integration with Ren'Py, maintaining full functionality and performance.
@@ -1895,9 +1816,6 @@ Translate existing non-Python components of the Live2D Cubism SDK into Python to
 ---
 
 ## 11. Component Listing and Interactions
-
-
-[Related sections: [10. Code Translation from Non-Python to Python](#10-code-translation-from-non-python-to-python), [12. Python Code Snippets for Key Functions](#12-python-code-snippets-for-key-functions)]
 
 **Objective:**  
 Identify and list all necessary components required for the integration, detailing their interactions to ensure a cohesive and functional system.
@@ -1963,9 +1881,6 @@ Identify and list all necessary components required for the integration, detaili
 
 ## 12. Python Code Snippets for Key Functions
 
-
-[Related sections: [11. Component Listing and Interactions](#11-component-listing-and-interactions), [13. Integration with Existing Ren'Py Systems](#13-integration-with-existing-ren'py-systems)]
-
 **Objective:**  
 Provide essential Python code snippets that illustrate the integration of Live2D Cubism SDK functionalities within the Ren'Py project. These snippets serve as practical examples for developers to understand and implement key features such as model loading, animation control, lip synchronization, physics handling, and shader management.
 
@@ -1976,7 +1891,7 @@ Handles the loading and initialization of Live2D models using the Cubism Core AP
 
 **File Path:** `library/live2d_integration/model_loader.py`
 
-```python/to/library/live2d_integration/model_loader.py
+```python:path/to/library/live2d_integration/model_loader.py
 class ModelLoader:
     def __init__(self, model_path):
         """
@@ -2002,7 +1917,7 @@ class ModelLoader:
         model = CubismModel(path)
         return model
 ```
-    
+
 ### **12.2 AnimationController Class**
 
 **Description:**  
@@ -2010,7 +1925,7 @@ Manages the playback and control of Live2D animations.
 
 **File Path:** `library/live2d_integration/animation_controller.py`
 
-```python/to/library/live2d_integration/animation_controller.py
+```python:path/to/library/live2d_integration/animation_controller.py
 class AnimationController:
     def __init__(self, model):
         """
@@ -2040,7 +1955,7 @@ class AnimationController:
             self.current_animation.stop()
             self.current_animation = None
 ```
-    
+
 ### **12.3 LipSyncManager Class**
 
 **Description:**  
@@ -2048,7 +1963,7 @@ Synchronizes character mouth movements with audio files to achieve realistic lip
 
 **File Path:** `library/live2d_integration/lip_sync_manager.py`
 
-```python/to/library/live2d_integration/lip_sync_manager.py
+```python:path/to/library/live2d_integration/lip_sync_manager.py
 class LipSyncManager:
     def __init__(self, model):
         """
@@ -2083,7 +1998,7 @@ class LipSyncManager:
         # Implementation for audio processing
         return "processed_lip_sync_data"
 ```
-    
+
 ### **12.4 PhysicsHandler Class**
 
 **Description:**  
@@ -2091,7 +2006,7 @@ Incorporates physics simulations to add realistic movements and interactions to 
 
 **File Path:** `library/live2d_integration/physics_handler.py`
 
-```python/to/library/live2d_integration/physics_handler.py
+```python:path/to/library/live2d_integration/physics_handler.py
 class PhysicsHandler:
     def __init__(self, model):
         """
@@ -2124,7 +2039,7 @@ class PhysicsHandler:
         self.physics_simulation.update(delta_time)
         self.model.apply_physics(self.physics_simulation.get_simulation_data())
 ```
-    
+
 ### **12.5 ShaderManager Class**
 
 **Description:**  
@@ -2132,7 +2047,7 @@ Manages shader applications to enhance the visual effects of Live2D models.
 
 **File Path:** `library/live2d_integration/shader_manager.py`
 
-```python/to/library/live2d_integration/shader_manager.py
+```python:path/to/library/live2d_integration/shader_manager.py
 class ShaderManager:
     def __init__(self, model):
         """
@@ -2167,7 +2082,7 @@ class ShaderManager:
             self.model.apply_shader(self.shaders[shader_name])
             self.current_shader = shader_name
 ```
-    
+
 ### **12.6 Full Integration Example**
 
 **Description:**  
@@ -2175,7 +2090,7 @@ Combines all key functionalities to demonstrate a complete integration workflow 
 
 **File Path:** `game/scripts/full_integration_example.rpy`
 
-```renpy/to/game/scripts/full_integration_example.rpy
+```renpy:path/to/game/scripts/full_integration_example.rpy
 label start:
     scene bg classroom
 
@@ -2222,7 +2137,7 @@ label start:
 
     return
 ```
-    
+
 ### **12.7 Cursor Tracking Integration**
 
 **Description:**  
@@ -2230,7 +2145,7 @@ Implements cursor tracking to make the Live2D model respond to mouse movements b
 
 **File Path:** `game/scripts/cursor_tracking_integration.rpy`
 
-```renpy/to/game/scripts/cursor_tracking_integration.rpy
+```renpy:path/to/game/scripts/cursor_tracking_integration.rpy
 init python:
     from library.live2d_integration.cursor_tracking import CursorTracker
     from library.live2d_integration.animation_controller import AnimationController
@@ -2250,7 +2165,7 @@ label cursor_tracking:
         pause 0.016  # Approximately 60 FPS
     return
 ```
-    
+
 ### **12.8 Shader Switching Based on Mood**
 
 **Description:**  
@@ -2258,7 +2173,7 @@ Changes the Live2D model’s shader based on the character’s mood, enhancing v
 
 **File Path:** `game/scripts/shader_switching_example.rpy`
 
-```renpy/to/game/scripts/shader_switching_example.rpy
+```renpy:path/to/game/scripts/shader_switching_example.rpy
 label mood_scene:
     scene bg evening
 
@@ -2290,16 +2205,13 @@ label mood_scene:
 
     return
 ```
-    
+
 ### **Conclusion:**  
 These Python code snippets provide a foundational framework for integrating Live2D Cubism SDK functionalities within Ren'Py projects. By utilizing these classes and example scripts, developers can effectively manage model loading, animations, lip synchronization, physics simulations, and shader applications, creating dynamic and interactive visual novel experiences.
 
 ---
 
 ## 13. Integration with Existing Ren'Py Systems
-
-
-[Related sections: [7. Integration with Ren'Py and Live2D Cubism Systems](#7-integration-with-ren'py-and-live2d-cubism-systems), [12. Python Code Snippets for Key Functions](#12-python-code-snippets-for-key-functions), [14. Performance Bottlenecks and Optimizations](#14-performance-bottlenecks-and-optimizations)]
 
 **Objective:**  
 Ensure that the integrated Live2D functionalities work cohesively with existing Ren'Py systems, maintaining compatibility and enhancing overall functionality.
@@ -2345,9 +2257,6 @@ Ensure that the integrated Live2D functionalities work cohesively with existing 
 ---
 
 ## 14. Performance Bottlenecks and Optimizations
-
-
-[Related sections: [5. Bug Identification and Potential Improvements](#5-bug-identification-and-potential-improvements), [9. Performance Optimization and Compatibility](#9-performance-optimization-and-compatibility), [13. Integration with Existing Ren'Py Systems](#13-integration-with-existing-ren'py-systems)]
 
 **Objective:**  
 Identify potential performance bottlenecks in the integrated Ren'Py and Live2D Cubism SDK system and propose optimization strategies to ensure smooth and efficient runtime performance across all supported platforms.
@@ -2443,9 +2352,6 @@ Addressing performance bottlenecks through proactive optimization strategies is 
 
 ## 15. Cross-Platform Compatibility
 
-
-[Related sections: [9. Performance Optimization and Compatibility](#9-performance-optimization-and-compatibility), [14. Performance Bottlenecks and Optimizations](#14-performance-bottlenecks-and-optimizations)]
-
 **Objective:**  
 Ensure that the integrated Live2D functionalities are compatible across all target platforms supported by Ren'Py, including Windows, macOS, Linux, iOS, and Android.
 
@@ -2498,9 +2404,6 @@ Ensure that the integrated Live2D functionalities are compatible across all targ
 ---
 
 ## 16. Implementation of Cubism Core API and Live2D Cubism SDK
-
-
-[Related sections: [7. Integration with Ren'Py and Live2D Cubism Systems](#7-integration-with-ren'py-and-live2d-cubism-systems), [17. Model Loading, Rendering, and Animation](#17-model-loading,-rendering,-and-animation)]
 
 **Objective:**  
 Detail the steps and considerations involved in implementing the Cubism Core API and integrating the Live2D Cubism SDK into the Ren'Py project. This section ensures that the foundational elements required for Live2D functionalities are correctly set up and operational within the Ren'Py environment.
@@ -2579,16 +2482,13 @@ def shutdown_cubism():
     """
     CubismFramework.dispose()
 `````
-    
+
 ### **Conclusion:**  
 Successful implementation of the Cubism Core API and Live2D Cubism SDK within Ren'Py requires meticulous setup and integration of the SDK’s components, efficient rendering pipeline modifications, and robust animation handling. By following the outlined steps and adhering to best practices, developers can achieve a seamless and high-performance integration that enhances the visual and interactive qualities of their Ren'Py-based visual novels.
 
 ---
 
 ## 17. Model Loading, Rendering, and Animation
-
-
-[Related sections: [16. Implementation of Cubism Core API and Live2D Cubism SDK](#16-implementation-of-cubism-core-api-and-live2d-cubism-sdk), [18. Automatic Eye Blinking and Mouth Movement](#18-automatic-eye-blinking-and-mouth-movement)]
 
 **Objective:**  
 Develop and implement the processes for loading Live2D models, rendering them within the Ren'Py environment, and managing their animations effectively.
@@ -2638,9 +2538,6 @@ Develop and implement the processes for loading Live2D models, rendering them wi
 ---
 
 ## 18. Automatic Eye Blinking and Mouth Movement
-
-
-[Related sections: [17. Model Loading, Rendering, and Animation](#17-model-loading,-rendering,-and-animation), [19. Physics Simulation](#19-physics-simulation)]
 
 **Objective:**  
 Implement automatic eye blinking and mouth movement systems to enhance the realism and expressiveness of Live2D models within the Ren'Py environment.
@@ -2694,9 +2591,6 @@ Implement automatic eye blinking and mouth movement systems to enhance the reali
 
 ## 19. Physics Simulation
 
-
-[Related sections: [18. Automatic Eye Blinking and Mouth Movement](#18-automatic-eye-blinking-and-mouth-movement), [20. User Data Handling](#20-user-data-handling)]
-
 **Objective:**  
 Implement physics simulations to enable realistic movements and interactions of Live2D models, enhancing the dynamic behavior of characters within Ren'Py projects.
 
@@ -2749,9 +2643,6 @@ Implement physics simulations to enable realistic movements and interactions of 
 ---
 
 ## 20. User Data Handling
-
-
-[Related sections: [19. Physics Simulation](#19-physics-simulation), [21. Shader System Development](#21-shader-system-development)]
 
 **Objective:**  
 Implement robust systems for handling user data related to Live2D models, ensuring data integrity, security, and efficient management within Ren'Py projects.
@@ -2816,9 +2707,6 @@ Implement robust systems for handling user data related to Live2D models, ensuri
 
 ## 21. Shader System Development
 
-
-[Related sections: [20. User Data Handling](#20-user-data-handling), [22. Particle System Implementation](#22-particle-system-implementation)]
-
 **Objective:**  
 Create a comprehensive shader system that allows for real-time compilation and hot-reloading of shaders, enabling dynamic visual effects for Live2D models within Ren'Py projects.
 
@@ -2881,9 +2769,6 @@ Create a comprehensive shader system that allows for real-time compilation and h
 ---
 
 ## 22. Particle System Implementation
-
-
-[Related sections: [21. Shader System Development](#21-shader-system-development), [23. Rendering Pipeline Blend Modes Support](#23-rendering-pipeline-blend-modes-support)]
 
 **Objective:**  
 Implement a particle system to enhance visual effects for Live2D models within Ren'Py projects, enabling dynamic and engaging visual elements such as sparkles, smoke, and magic effects.
@@ -2948,9 +2833,6 @@ Implement a particle system to enhance visual effects for Live2D models within R
 
 ## 23. Rendering Pipeline Blend Modes Support
 
-
-[Related sections: [22. Particle System Implementation](#22-particle-system-implementation), [24. Shader Parameter Adjustment Interfaces](#24-shader-parameter-adjustment-interfaces)]
-
 **Objective:**  
 Support various blend modes within the rendering pipeline to enable diverse visual effects and interactions for Live2D models in Ren'Py projects.
 
@@ -3008,9 +2890,6 @@ Support various blend modes within the rendering pipeline to enable diverse visu
 ---
 
 ## 24. Shader Parameter Adjustment Interfaces
-
-
-[Related sections: [23. Rendering Pipeline Blend Modes Support](#23-rendering-pipeline-blend-modes-support), [25. Voiceover System with Lip Sync and Visemes](#25-voiceover-system-with-lip-sync-and-visemes)]
 
 **Objective:**  
 Develop user-friendly interfaces that allow developers and artists to adjust shader parameters in real-time, enabling fine-tuned visual effects for Live2D models within Ren'Py projects.
@@ -3075,9 +2954,6 @@ Develop user-friendly interfaces that allow developers and artists to adjust sha
 
 ## 25. Voiceover System with Lip Sync and Visemes
 
-
-[Related sections: [24. Shader Parameter Adjustment Interfaces](#24-shader-parameter-adjustment-interfaces), [26. Phoneme Extraction from Audio Files](#26-phoneme-extraction-from-audio-files)]
-
 **Objective:**  
 Develop an advanced voiceover system that integrates lip synchronization and viseme generation, enhancing the realism of Live2D models during spoken dialogue within Ren'Py projects.
 
@@ -3138,9 +3014,6 @@ Develop an advanced voiceover system that integrates lip synchronization and vis
 ---
 
 ## 26. Phoneme Extraction from Audio Files
-
-
-[Related sections: [25. Voiceover System with Lip Sync and Visemes](#25-voiceover-system-with-lip-sync-and-visemes), [27. Cursor Tracking for Interactive Elements](#27-cursor-tracking-for-interactive-elements)]
 
 **Objective:**  
 Implement a reliable system for extracting phonemes from audio files to support accurate lip synchronization and viseme generation for Live2D models within Ren'Py projects.
@@ -3204,9 +3077,6 @@ Implement a reliable system for extracting phonemes from audio files to support 
 ---
 
 ## 27. Cursor Tracking for Interactive Elements
-
-
-[Related sections: [26. Phoneme Extraction from Audio Files](#26-phoneme-extraction-from-audio-files), [28. Expression System for Characters](#28-expression-system-for-characters)]
 
 **Objective:**  
 Implement a cursor tracking system that allows Live2D models to respond to user interactions, enhancing interactivity and engagement within the visual novel.
@@ -3325,7 +3195,7 @@ class CursorTracker:
         if animation:
             self.animation_controller.play_animation(animation)
 `````
-    ### **Integration into Ren'Py Script**
+### **Integration into Ren'Py Script**
 
 `````renpy:game/scripts/cursor_tracking_integration.rpy
 init python:
@@ -3347,15 +3217,12 @@ label cursor_tracking:
         pause 0.016  # Approximately 60 FPS
     return
 `````
-    ### **Conclusion:**  
+### **Conclusion:**  
 Implementing cursor tracking enhances the interactivity of Live2D models within Ren'Py visual novels, providing dynamic and engaging character responses based on user interactions. By systematically detecting cursor positions, defining interaction zones, and triggering appropriate animations, developers can create more immersive and responsive storytelling experiences.
 
 ---
 
 ## 28. Expression System for Characters
-
-
-[Related sections: [27. Cursor Tracking for Interactive Elements](#27-cursor-tracking-for-interactive-elements), [29. Localization and Translation Improvements](#29-localization-and-translation-improvements)]
 
 **Objective:**  
 Develop an expression system that enables Live2D characters to display a variety of emotions and facial expressions, enhancing character depth and storytelling within Ren'Py projects.
@@ -3420,9 +3287,6 @@ Develop an expression system that enables Live2D characters to display a variety
 
 ## 29. Localization and Translation Improvements
 
-
-[Related sections: [28. Expression System for Characters](#28-expression-system-for-characters), [30. Performance Bottlenecks and Optimization Strategies](#30-performance-bottlenecks-and-optimization-strategies)]
-
 **Objective:**  
 Enhance localization and translation support to enable context-aware, dynamic language switching, and support for non-Latin scripts within Ren'Py projects utilizing Live2D models.
 
@@ -3481,9 +3345,6 @@ Enhance localization and translation support to enable context-aware, dynamic la
 ---
 
 ## 30. Performance Bottlenecks and Optimization Strategies
-
-
-[Related sections: [14. Performance Bottlenecks and Optimizations](#14-performance-bottlenecks-and-optimizations), [29. Localization and Translation Improvements](#29-localization-and-translation-improvements), [31. Integration Plan with Ren'Py Codebase](#31-integration-plan-with-ren'py-codebase)]
 
 **Objective:**  
 List and address potential performance bottlenecks in the integrated system and provide detailed optimization strategies with code examples to ensure efficient operation of Live2D functionalities within Ren'Py projects.
@@ -3649,9 +3510,6 @@ List and address potential performance bottlenecks in the integrated system and 
 
 ## 31. Integration Plan with Ren'Py Codebase
 
-
-[Related sections: [13. Integration with Existing Ren'Py Systems](#13-integration-with-existing-ren'py-systems), [30. Performance Bottlenecks and Optimization Strategies](#30-performance-bottlenecks-and-optimization-strategies), [32. Testing Strategies](#32-testing-strategies)]
-
 **Objective:**  
 Outline a comprehensive plan for integrating Live2D functionalities with the existing Ren'Py codebase, ensuring compatibility, maintainability, and seamless functionality.
 
@@ -3719,9 +3577,6 @@ Outline a comprehensive plan for integrating Live2D functionalities with the exi
 ---
 
 ## 32. Testing Strategies
-
-
-[Related sections: [31. Integration Plan with Ren'Py Codebase](#31-integration-plan-with-ren'py-codebase), [33. Impact on Other Ren'Py Systems and Mitigation Strategies](#33-impact-on-other-ren'py-systems-and-mitigation-strategies)]
 
 **Objective:**  
 Suggest comprehensive testing strategies, including unit tests and integration tests, to ensure the reliability, stability, and performance of Live2D integrations within Ren'Py projects.
@@ -3813,9 +3668,6 @@ Suggest comprehensive testing strategies, including unit tests and integration t
 
 ## 33. Impact on Other Ren'Py Systems and Mitigation Strategies
 
-
-[Related sections: [32. Testing Strategies](#32-testing-strategies), [34. Error Handling and Debugging Strategies](#34-error-handling-and-debugging-strategies)]
-
 **Objective:**  
 Discuss the potential impacts of integrating Live2D functionalities on existing Ren'Py systems and outline mitigation strategies to address and minimize these effects.
 
@@ -3902,9 +3754,6 @@ Discuss the potential impacts of integrating Live2D functionalities on existing 
 
 ## 34. Error Handling and Debugging Strategies
 
-
-[Related sections: [33. Impact on Other Ren'Py Systems and Mitigation Strategies](#33-impact-on-other-ren'py-systems-and-mitigation-strategies), [35. API Reference with Code Examples](#35-api-reference-with-code-examples)]
-
 **Objective:**  
 Implement robust error handling and debugging strategies to ensure that issues arising from Live2D integrations are effectively captured, diagnosed, and resolved without disrupting Ren'Py applications.
 
@@ -3980,9 +3829,6 @@ Implement robust error handling and debugging strategies to ensure that issues a
 
 ## 35. API Reference with Code Examples
 
-
-[Related sections: [34. Error Handling and Debugging Strategies](#34-error-handling-and-debugging-strategies), [36. Example Ren'Py Scripts Demonstrating Live2D Features](#36-example-ren'py-scripts-demonstrating-live2d-features)]
-
 **Objective:**  
 Provide a comprehensive API reference for the integrated Live2D Cubism SDK within the Ren'Py project, supplemented with clear and practical code examples. This reference serves as a guide for developers to effectively utilize Live2D functionalities in their visual novel projects.
 
@@ -4001,12 +3847,12 @@ Handles the loading and initialization of Live2D models using the Cubism Core AP
   - **Example:**
 
 ```python
-    from library.live2d_integration.model_loader import load_model
+from library.live2d_integration.model_loader import load_model
 
 # Load the Live2D model
 model = load_model("assets/live2d_models/character.model3.json")
 ```
-    ### **35.2 AnimationController Class**
+### **35.2 AnimationController Class**
 
 **Description:**  
 Manages the playback and control of Live2D animations.
@@ -4020,7 +3866,7 @@ Manages the playback and control of Live2D animations.
   - **Example:**
 
 ```python
-    from library.live2d_integration.animation_controller import AnimationController
+from library.live2d_integration.animation_controller import AnimationController
 
 # Initialize the animation controller with the model
 animation_controller = AnimationController(model)
@@ -4028,15 +3874,15 @@ animation_controller = AnimationController(model)
 # Play the 'idle' animation
 animation_controller.play_animation("idle")
 ```
-    - **`stop_animation()`**
+- **`stop_animation()`**
   - **Description:** Stops the currently playing animation.
   - **Example:**
 
 ```python
-    # Stop the current animation
+# Stop the current animation
 animation_controller.stop_animation()
 ```
-    ### **35.3 LipSyncManager Class**
+### **35.3 LipSyncManager Class**
 
 **Description:**  
 Synchronizes character mouth movements with audio files to achieve realistic lip-syncing.
@@ -4050,7 +3896,7 @@ Synchronizes character mouth movements with audio files to achieve realistic lip
   - **Example:**
 
 ```python
-    from library.live2d_integration.lip_sync_manager import LipSyncManager
+from library.live2d_integration.lip_sync_manager import LipSyncManager
 
 # Initialize the lip sync manager with the model
 lip_sync_manager = LipSyncManager(model)
@@ -4058,7 +3904,7 @@ lip_sync_manager = LipSyncManager(model)
 # Synchronize lip movements with the provided audio
 lip_sync_manager.sync_lip_sync("audio/voice_over.wav")
 ```
-    ### **35.4 PhysicsHandler Class**
+### **35.4 PhysicsHandler Class**
 
 **Description:**  
 Incorporates physics simulations to add realistic movements and interactions to Live2D models.
@@ -4072,7 +3918,7 @@ Incorporates physics simulations to add realistic movements and interactions to 
   - **Example:**
 
 ```python
-    from library.live2d_integration.physics_handler import PhysicsHandler
+from library.live2d_integration.physics_handler import PhysicsHandler
 
 # Initialize the physics handler with the model
 physics_handler = PhysicsHandler(model)
@@ -4080,7 +3926,7 @@ physics_handler = PhysicsHandler(model)
 # Update physics simulation with elapsed time
 physics_handler.update_physics(0.016)  # Assuming 60 FPS, delta_time ≈ 1/60
 ```
-    
+
 ### **35.5 ShaderManager Class**
 
 **Description:**  
@@ -4096,7 +3942,7 @@ Manages shader applications to enhance the visual effects of Live2D models.
   - **Example:**
 
 ```python
-    from library.live2d_integration.shader_manager import ShaderManager
+from library.live2d_integration.shader_manager import ShaderManager
 
 # Initialize the shader manager with the model
 shader_manager = ShaderManager(model)
@@ -4104,17 +3950,17 @@ shader_manager = ShaderManager(model)
 # Load and apply the 'glow' shader
 shader_manager.load_shader("glow", "sdk/cubism/Shaders/glow.shader")
 ```
-    - **`switch_shader(shader_name: str)`**
+- **`switch_shader(shader_name: str)`**
   - **Description:** Switches the model's current shader to the specified one.
   - **Parameters:**
     - `shader_name` (str): The identifier of the shader to switch to.
   - **Example:**
 
 ```python
-    # Switch to the 'default' shader
+# Switch to the 'default' shader
 shader_manager.switch_shader("default")
 ```
-    ### **35.6 Full Integration Example**
+### **35.6 Full Integration Example**
 
 **Description:**  
 Combines all key functionalities to demonstrate a complete integration workflow within a Ren'Py script.
@@ -4158,15 +4004,12 @@ label start:
 
     return
 ```
-    ### **Conclusion:**  
+### **Conclusion:**  
 This API reference, complemented with practical code examples, equips developers with the necessary tools to effectively integrate and utilize Live2D functionalities within Ren'Py projects. By following these examples, developers can implement dynamic models, responsive animations, and interactive features that enhance the storytelling experience.
 
 ---
 
 ## 36. Example Ren'Py Scripts Demonstrating Live2D Features
-
-
-[Related sections: [35. API Reference with Code Examples](#35-api-reference-with-code-examples), [37. Documentation and Commenting Standards](#37-documentation-and-commenting-standards)]
 
 **Objective:**  
 Provide example Ren'Py scripts that showcase the integration of Live2D features within a Ren'Py visual novel. These examples demonstrate how to load models, trigger animations, handle lip synchronization, and respond to user interactions, serving as templates for developers to build upon.
@@ -4194,7 +4037,7 @@ label start:
 
     return
 ```
-    ### **36.2 Lip Sync with Voiceover**
+### **36.2 Lip Sync with Voiceover**
 
 **Description:**  
 Shows how to synchronize character mouth movements with a voiceover audio file.
@@ -4223,7 +4066,7 @@ label welcome_scene:
 
     return
 ```
-    ### **36.3 Interactive Cursor Tracking**
+### **36.3 Interactive Cursor Tracking**
 
 **Description:**  
 Implements cursor tracking to make the Live2D model respond to mouse movements by changing expressions when the cursor is nearby.
@@ -4265,7 +4108,7 @@ screen cursor_tracker_screen:
         cursor_tracker.update_cursor_position(cursor_x, cursor_y)
     pause 0.016  # Approximately 60 FPS
 ```
-    ### **36.4 Shader Switching Based on Mood**
+### **36.4 Shader Switching Based on Mood**
 
 **Description:**  
 Changes the Live2D model’s shader based on the character’s mood, enhancing visual expression.
@@ -4304,7 +4147,7 @@ label mood_scene:
 
     return
 ```
-    ### **36.5 Physics-Based Movement**
+### **36.5 Physics-Based Movement**
 
 **Description:**  
 Applies physics simulations to the Live2D model to create natural and dynamic movements, such as waving arms influenced by gravity.
@@ -4333,15 +4176,12 @@ label physics_scene:
         pause 0.016
     return
 ```
-    ### **Conclusion:**  
+### **Conclusion:**  
 These example scripts illustrate various ways to integrate and utilize Live2D features within Ren'Py, including model display, animation control, lip synchronization, cursor interaction, shader management, and physics-based movements. Developers can use these templates as starting points to create rich and interactive character experiences in their visual novels.
 
 ---
 
 ## 37. Documentation and Commenting Standards
-
-
-[Related sections: [36. Example Ren'Py Scripts Demonstrating Live2D Features](#36-example-ren'py-scripts-demonstrating-live2d-features), [38. Step-by-Step Coding Guidelines](#38-step-by-step-coding-guidelines)]
 
 **Objective:**  
 Establish comprehensive documentation and commenting standards to ensure code readability, maintainability, and ease of collaboration among developers working on the integrated Ren'Py and Live2D Cubism SDK system.
@@ -4365,7 +4205,7 @@ Establish comprehensive documentation and commenting standards to ensure code re
         """
         # Function implementation
     ```
-    
+
 - **Inline Comments:**
   - **Usage:** Provide inline comments to explain complex logic, algorithms, or decisions within the code.
   - **Placement:** Place comments above the relevant code block or at the end of a line if brief.
@@ -4375,7 +4215,7 @@ Establish comprehensive documentation and commenting standards to ensure code re
     # Calculate distance between cursor and interaction zone
     distance = self.calculate_distance(cursor_x, cursor_y, props['x'], props['y'])
     ```
-    
+
 - **Block Comments:**
   - **Usage:** Use block comments for larger explanations that span multiple lines, such as detailing the logic of a function or a section of code.
   - **Format:** Begin each line of a block comment with a hash (`#`) followed by a space.
@@ -4386,7 +4226,7 @@ Establish comprehensive documentation and commenting standards to ensure code re
     # This allows the model to respond to physics simulations such as gravity and wind
     physics_handler = PhysicsHandler(model)
     ```
-    
+
 ### **2. Documentation Standards**
 
 - **Markdown Documentation:**
@@ -4405,7 +4245,7 @@ Establish comprehensive documentation and commenting standards to ensure code re
             ├── physics_handler.md
             └── shader_manager.md
     ```
-    
+
 - **Usage Examples:**
   - **In Documentation:** Provide clear and concise examples demonstrating how to use each module and its functionalities.
   - **Integration Scripts:** Include example Ren'Py scripts that showcase integrated features, as detailed in Section 36.
@@ -4425,7 +4265,7 @@ Establish comprehensive documentation and commenting standards to ensure code re
     def calculate_distance(x1, y1, x2, y2):
         # Function implementation
     ```
-    
+
 - **Classes:**
   - **Style:** Use PascalCase for class names.
   - **Example:**
@@ -4434,7 +4274,7 @@ Establish comprehensive documentation and commenting standards to ensure code re
     class AnimationController:
         # Class implementation
     ```
-    
+
 - **Constants:**
   - **Style:** Use UPPER_SNAKE_CASE for constants.
   - **Example:**
@@ -4442,7 +4282,7 @@ Establish comprehensive documentation and commenting standards to ensure code re
     ```python
     MAX_ANIMATION_SPEED = 60
     ```
-    
+
 ### **4. Code Structure and Organization**
 
 - **Modular Design:**
@@ -4461,7 +4301,7 @@ Establish comprehensive documentation and commenting standards to ensure code re
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model file not found at: {model_path}")
     ```
-    
+
 ### **5. Version Control and Documentation Updates**
 
 - **Commit Messages:**
@@ -4471,7 +4311,7 @@ Establish comprehensive documentation and commenting standards to ensure code re
     ```
     Add ModelLoader class for Live2D model handling
     ```
-    
+
 - **Documentation Sync:**
   - **Updates:** Ensure that documentation is updated in tandem with code changes to maintain accuracy.
   - **Review:** Incorporate documentation reviews as part of the code review process to catch discrepancies early.
@@ -4506,16 +4346,13 @@ Establish comprehensive documentation and commenting standards to ensure code re
     - Ensure your pull request adheres to the project’s coding and documentation standards.
     - Provide a detailed description of the changes made.
     ```
-    
+
 ### **Conclusion:**  
 Adhering to comprehensive documentation and commenting standards enhances code readability, facilitates maintenance, and fosters effective collaboration among developers. By implementing these guidelines, the integrated Ren'Py and Live2D Cubism SDK system remains organized, scalable, and accessible to both current and future team members.
 
 ---
 
 ## 38. Step-by-Step Coding Guidelines
-
-
-[Related sections: [37. Documentation and Commenting Standards](#37-documentation-and-commenting-standards), [39. Key Challenges and Solutions](#39-key-challenges-and-solutions)]
 
 **Objective:**  
 Provide a structured set of coding guidelines to assist developers in implementing and maintaining the integration of the Live2D Cubism SDK within the Ren'Py project. These guidelines ensure consistency, efficiency, and high-quality code throughout the development process.
@@ -4528,13 +4365,13 @@ Provide a structured set of coding guidelines to assist developers in implementi
     git clone https://github.com/yourusername/renpy-live2d-integration.git
     cd renpy-live2d-integration
     ```
-    
+
 - **Install Dependencies:**
   - Install necessary Python packages using `pip` or other package managers as specified in the `requirements.txt` file.
     ```bash
     pip install -r requirements.txt
     ```
-    
+
 - **Configure Environment:**
   - Set up environment variables if required, such as paths to the Live2D SDK or specific configuration settings.
 
@@ -4546,7 +4383,7 @@ Provide a structured set of coding guidelines to assist developers in implementi
     ```bash
     black .
     ```
-    
+
 - **Descriptive Naming:**
   - Use clear and descriptive names for variables, functions, classes, and modules.
     ```python
@@ -4558,7 +4395,7 @@ Provide a structured set of coding guidelines to assist developers in implementi
     def lm(p):
         pass
     ```
-    
+
 - **Function Size:**
   - Keep functions and methods concise, ideally performing a single task or responsibility.
   - If a function grows too large, refactor it into smaller, manageable pieces.
@@ -4568,7 +4405,7 @@ Provide a structured set of coding guidelines to assist developers in implementi
     ```python
     MAX_ANIMATION_LENGTH = 5.0  # seconds
     ```
-    
+
 ### **3. Module and Class Design**
 
 - **Single Responsibility:**
@@ -4582,7 +4419,7 @@ Provide a structured set of coding guidelines to assist developers in implementi
         # Responsible only for managing animations
         pass
     ```
-    
+
 - **Encapsulation:**
   - Encapsulate related functionalities within classes and provide public interfaces for interaction.
     ```python
@@ -4593,7 +4430,7 @@ Provide a structured set of coding guidelines to assist developers in implementi
         def sync_lip_sync(self, audio_file):
             pass
     ```
-    
+
 - **Inheritance and Composition:**
   - Use inheritance and composition appropriately to promote code reuse and flexibility.
 
@@ -4607,14 +4444,14 @@ Provide a structured set of coding guidelines to assist developers in implementi
     except FileNotFoundError as e:
         print(f"Error loading model: {e}")
     ```
-    
+
 - **Custom Exceptions:**
   - Define custom exception classes for specific error scenarios.
     ```python
     class ModelLoadingError(Exception):
         pass
     ```
-    
+
 - **Resource Cleanup:**
   - Ensure that resources are properly released in the event of an error, using `finally` blocks or context managers.
     ```python
@@ -4625,7 +4462,7 @@ Provide a structured set of coding guidelines to assist developers in implementi
         # Resource cleanup
         pass
     ```
-    
+
 ### **5. Documentation and Comments**
 
 - **Docstrings:**
@@ -4643,14 +4480,14 @@ Provide a structured set of coding guidelines to assist developers in implementi
         """
         pass
     ```
-    
+
 - **Inline Comments:**
   - Provide inline comments to explain non-trivial sections of code.
     ```python
     # Calculate the distance between cursor and character's face
     distance = calculate_distance(cursor_x, cursor_y, face_x, face_y)
     ```
-    
+
 - **Documentation Updates:**
   - Update the Markdown documentation in `library/live2d_integration/docs/` alongside code changes.
 
@@ -4671,7 +4508,7 @@ Provide a structured set of coding guidelines to assist developers in implementi
             with self.assertRaises(FileNotFoundError):
                 load_model("nonexistent/model.json")
     ```
-    
+
 - **Integration Tests:**
   - Develop integration tests to validate the interaction between Ren'Py and Live2D components.
 
@@ -4686,13 +4523,13 @@ Provide a structured set of coding guidelines to assist developers in implementi
     # Create a new feature branch
     git checkout -b feature/live2d-integration
     ```
-    
+
 - **Commit Messages:**
   - Write clear and descriptive commit messages that summarize the changes made.
     ```
     Add ModelLoader class for Live2D model handling
     ```
-    
+
 - **Pull Requests:**
   - Submit pull requests for code reviews before merging changes into the main branch.
   - Include a summary of changes and reference relevant issues or tasks.
@@ -4705,7 +4542,7 @@ Provide a structured set of coding guidelines to assist developers in implementi
     # Example using cProfile
     python -m cProfile -o profile_output.prof your_script.py
     ```
-    
+
 - **Optimization:**
   - Optimize critical sections of code, such as animation loops and rendering calls, to enhance performance without sacrificing functionality.
 
@@ -4730,7 +4567,7 @@ Provide a structured set of coding guidelines to assist developers in implementi
     #!/bin/bash
     python build.py
     ```
-    
+
 - **Environment Configuration:**
   - Manage environment-specific configurations and secrets securely, avoiding hard-coded paths or credentials.
 
@@ -4740,9 +4577,6 @@ Following these step-by-step coding guidelines ensures that the integration of t
 ---
 
 ## 39. Key Challenges and Solutions
-
-
-[Related sections: [38. Step-by-Step Coding Guidelines](#38-step-by-step-coding-guidelines), [40. Remaining Concerns and Issues](#40-remaining-concerns-and-issues)]
 
 **Objective:**  
 Identify potential challenges that may arise during the integration of the Live2D Cubism SDK with the Ren'Py visual novel engine and propose effective solutions to address them. This proactive approach ensures smooth development processes and mitigates risks associated with complex integrations.
@@ -4870,9 +4704,6 @@ By anticipating and addressing these key challenges through strategic planning a
 
 ## 40. Remaining Concerns and Issues
 
-
-[Related sections: [39. Key Challenges and Solutions](#39-key-challenges-and-solutions), [41. Process Improvements for Future Features](#41-process-improvements-for-future-features)]
-
 **Objective:**  
 Identify and document any remaining concerns, issues, or potential obstacles that have not been previously addressed in the integration of the Live2D Cubism SDK with the Ren'Py visual novel engine. This section ensures that all aspects of the project are thoroughly considered and planned for future resolution.
 
@@ -4984,9 +4815,6 @@ Addressing these remaining concerns and issues ensures a comprehensive and resil
 ---
 
 ## 41. Process Improvements for Future Features
-
-
-[Related sections: [40. Remaining Concerns and Issues](#40-remaining-concerns-and-issues), [42. Areas for Further Enhancement](#42-areas-for-further-enhancement)]
 
 **Objective:**  
 Identify and propose process improvements to streamline the development and integration of future features within the Ren'Py and Live2D Cubism SDK project. These enhancements aim to boost efficiency, maintain code quality, and ensure smooth feature rollouts.
@@ -5103,9 +4931,6 @@ By implementing these process improvements, the development and integration of f
 
 ## 42. Areas for Further Enhancement
 
-
-[Related sections: [41. Process Improvements for Future Features](#41-process-improvements-for-future-features), [43. Final Recommendations](#43-final-recommendations)]
-
 **Objective:**  
 Identify potential areas for further enhancement and expansion beyond the current integration of the Live2D Cubism SDK with the Ren'Py visual novel engine. These areas aim to elevate the project's capabilities, user experience, and maintainability in the long term.
 
@@ -5218,9 +5043,6 @@ Exploring these areas for further enhancement will significantly expand the capa
 
 ## 43. Final Recommendations
 
-
-[Related sections: [42. Areas for Further Enhancement](#42-areas-for-further-enhancement), [44. Review and Refinement](#44-review-and-refinement)]
-
 **Objective:**  
 Provide a coherent and well-reasoned set of final recommendations for the next steps in the integration of Live2D Cubism SDK with Ren'Py, ensuring successful implementation, optimal performance, and enhanced user experiences.
 
@@ -5305,9 +5127,6 @@ Implementing these final recommendations will ensure a successful and sustainabl
 ---
 
 ## 44. Review and Refinement
-
-
-[Related sections: [43. Final Recommendations](#43-final-recommendations)]
 
 **Objective:**  
 Conduct a thorough review of all sections of the Software Engineering Architectural Design Document to identify inconsistencies, overlooked information, and areas for potential refinements, ensuring a polished and comprehensive implementation plan.

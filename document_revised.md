@@ -15,42 +15,6 @@ Key aspects of the integration plan include:
 
 This document serves as a strategic roadmap for developers, providing in-depth technical guidance to ensure a successful integration that leverages the strengths of both Ren'Py and Live2D Cubism SDK.
 
-
-## Project Timeline and Milestones
-
-This section outlines the proposed timeline and key milestones for the Live2D Cubism SDK integration with Ren'Py.
-
-1. **Phase 1: Initial Analysis and Setup (Weeks 1-2)**
-   - Complete repository analysis
-   - Set up development environment
-   - Finalize project structure
-
-2. **Phase 2: Core Integration (Weeks 3-6)**
-   - Implement basic model loading and rendering
-   - Develop animation control system
-   - Integrate lip sync functionality
-
-3. **Phase 3: Advanced Features (Weeks 7-10)**
-   - Implement physics simulations
-   - Develop shader system
-   - Create particle system
-
-4. **Phase 4: Optimization and Testing (Weeks 11-13)**
-   - Perform performance optimizations
-   - Conduct thorough testing (unit, integration, cross-platform)
-   - Address identified issues and bugs
-
-5. **Phase 5: Documentation and Refinement (Weeks 14-15)**
-   - Complete API documentation
-   - Refine user guides and examples
-   - Conduct final review and adjustments
-
-6. **Phase 6: Release and Support (Week 16)**
-   - Prepare for initial release
-   - Set up support channels and documentation portals
-
-Note: This timeline is subject to adjustment based on project progress and any unforeseen challenges.
-
 ## Table of Contents
 
 1. [Introduction](#1-introduction)
@@ -105,6 +69,7 @@ Note: This timeline is subject to adjustment based on project progress and any u
 43. [Final Recommendations](#43-final-recommendations)
 44. [Review and Refinement](#44-review-and-refinement)
 ## 1. Introduction
+
 
 [Related sections: [2. Section 2](#2-section-2), [3. Project Structure Analysis](#3-project-structure-analysis)]
 
