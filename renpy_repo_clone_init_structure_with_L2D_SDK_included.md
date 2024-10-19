@@ -2916,11 +2916,6 @@ renpy
 │  ├── System Editor.edit.py
 │  ├── Visual Studio Code (System).edit.py
 │  └── Visual Studio Code.edit.py
-├── live2d
-│  ├── include
-│  ├── lib
-│  ├── models
-│  └── src
 ├── module
 │  ├── emoji
 │  │  ├── emoji-test.txt
