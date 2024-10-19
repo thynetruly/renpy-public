@@ -1,5 +1,7 @@
-$projectRoot = "C:\Users\thyne\rerenpy\renpy"
-$outputFile = "directory_structure.md"
+# Get the directory where the script is located
+$scriptPath = $MyInvocation.MyCommand.Path
+$projectRoot = Split-Path -Parent $scriptPath
+$outputFile = Join-Path $projectRoot "directory_structure.md"
 
 function Get-DirectoryTree {
     param (
@@ -13,7 +15,7 @@ function Get-DirectoryTree {
     if ($prefix -eq "") {
         $treeLine = $name
     } else {
-        $treeLine = "$prefix$(if ($isLast) { '└── ' } else { '├── ' })$name"
+        $treeLine = "$prefix$(if ($isLast) '└── ' else '├── ')$name"
     }
     
     $treeLine
@@ -23,7 +25,7 @@ function Get-DirectoryTree {
 
     for ($i = 0; $i -lt $count; $i++) {
         $item = $items[$i]
-        $newPrefix = $prefix + $(if ($isLast) { "    " } else { "│   " })
+        $newPrefix = $prefix + $(if ($isLast) "    " else "│   ")
         $isLastChild = ($i -eq $count - 1)
         Get-DirectoryTree -path $item.FullName -prefix $newPrefix -isLast $isLastChild
     }
