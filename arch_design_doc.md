@@ -213,84 +213,670 @@ This document will continue to elaborate on each of the listed tasks, providing 
 **Objective:**  
 Analyze the existing project structures of both Ren'Py and the Live2D Cubism SDK to design an optimized architecture for their integration. This analysis aims to identify potential improvements, streamline workflows, and ensure scalability and maintainability of the combined system.
 
+**Tasks:**
+
+- Map out the directory structure of the Ren'Py project, highlighting key modules and their interactions.
+- Analyze the Cubism SDK's structure, focusing on core components relevant to integration.
+- Identify overlapping functionalities and potential areas for consolidation.
+- Propose a modular architecture that accommodates both Ren'Py and Cubism components.
+- Create UML diagrams to visualize the proposed architecture and component interactions.
+
+**Expected Outcomes:**
+
+- Optimized project structure that facilitates maintainability and scalability.
+- Clear visualization of component interactions through diagrams.
+- Recommendations for structural improvements to enhance integration efficiency.
+
+---
+
 ### 3.1 Ren'Py Project Structure
 
 **Overview:**  
+
 Ren'Py is structured to facilitate the development of visual novels through a combination of scripting, asset management, and rendering systems. Understanding its project structure is crucial for seamless integration with the Live2D Cubism SDK.
 
 **Directory Structure:**
 
-```plaintext
+```plaintext:renpy/arch_design_doc.md
 renpy_project/
-├── assets/
-│   ├── images/
-│   ├── audio/
-│   ├── fonts/
-│   └── live2d_models/
-├── game/
-│   ├── script.rpy
-│   ├── options.rpy
-│   ├── screens.rpy
-│   └── characters.rpy
-├── library/
-│   ├── renpy/
-│   ├── live2d_integration/
-│   └── utils/
+├── .git/
+│   ├── hooks/
+│   ├── info/
+│   ├── logs/
+│   │   └── refs/
+│   │       ├── heads/
+│   │       └── remotes/
+│   │           └── origin/
+│   ├── objects/
+│   │   ├── 00/
+│   │   ├── 01/
+│   │   ├── 02/
+│   │   ├── 03/
+│   │   ├── 04/
+│   │   ├── 05/
+│   │   ├── 06/
+│   │   ├── 07/
+│   │   ├── 08/
+│   │   ├── 09/
+│   │   ├── 0b/
+│   │   ├── 0c/
+│   │   ├── 0d/
+│   │   ├── 0e/
+│   │   ├── 0f/
+│   │   ├── 10/
+│   │   ├── 11/
+│   │   ├── 12/
+│   │   ├── 13/
+│   │   ├── 14/
+│   │   ├── 15/
+│   │   ├── 16/
+│   │   ├── 17/
+│   │   ├── 18/
+│   │   ├── 19/
+│   │   ├── 1a/
+│   │   ├── 1b/
+│   │   ├── 1c/
+│   │   ├── 1d/
+│   │   ├── 1e/
+│   │   ├── 1f/
+│   │   ├── 20/
+│   │   ├── 21/
+│   │   ├── 22/
+│   │   ├── 23/
+│   │   ├── 24/
+│   │   ├── 25/
+│   │   ├── 26/
+│   │   ├── 27/
+│   │   ├── 28/
+│   │   ├── 29/
+│   │   ├── 2a/
+│   │   ├── 2b/
+│   │   ├── 2c/
+│   │   ├── 2d/
+│   │   ├── 2e/
+│   │   ├── 2f/
+│   │   ├── 30/
+│   │   ├── 31/
+│   │   ├── 32/
+│   │   ├── 33/
+│   │   ├── 34/
+│   │   ├── 35/
+│   │   ├── 36/
+│   │   ├── 37/
+│   │   ├── 38/
+│   │   ├── 39/
+│   │   ├── 3a/
+│   │   ├── 3b/
+│   │   ├── 3c/
+│   │   ├── 3d/
+│   │   ├── 3e/
+│   │   ├── 3f/
+│   │   ├── 40/
+│   │   ├── 41/
+│   │   ├── 42/
+│   │   ├── 43/
+│   │   ├── 44/
+│   │   ├── 45/
+│   │   ├── 46/
+│   │   ├── 47/
+│   │   ├── 48/
+│   │   ├── 49/
+│   │   ├── 4a/
+│   │   ├── 4b/
+│   │   ├── 4c/
+│   │   ├── 4d/
+│   │   ├── 4e/
+│   │   ├── 4f/
+│   │   ├── 50/
+│   │   ├── 51/
+│   │   ├── 52/
+│   │   ├── 53/
+│   │   ├── 54/
+│   │   ├── 55/
+│   │   ├── 56/
+│   │   ├── 57/
+│   │   ├── 58/
+│   │   ├── 59/
+│   │   ├── 5a/
+│   │   ├── 5b/
+│   │   ├── 5c/
+│   │   ├── 5d/
+│   │   ├── 5e/
+│   │   ├── 5f/
+│   │   ├── 60/
+│   │   ├── 61/
+│   │   ├── 62/
+│   │   ├── 63/
+│   │   ├── 64/
+│   │   ├── 65/
+│   │   ├── 66/
+│   │   ├── 67/
+│   │   ├── 68/
+│   │   ├── 69/
+│   │   ├── 6a/
+│   │   ├── 6b/
+│   │   ├── 6c/
+│   │   ├── 6d/
+│   │   ├── 6e/
+│   │   ├── 6f/
+│   │   ├── 70/
+│   │   ├── 71/
+│   │   ├── 72/
+│   │   ├── 73/
+│   │   ├── 74/
+│   │   ├── 75/
+│   │   ├── 76/
+│   │   ├── 77/
+│   │   ├── 78/
+│   │   ├── 79/
+│   │   ├── 7a/
+│   │   ├── 7b/
+│   │   ├── 7c/
+│   │   ├── 7d/
+│   │   ├── 7e/
+│   │   ├── 7f/
+│   │   ├── 80/
+│   │   ├── 81/
+│   │   ├── 82/
+│   │   ├── 83/
+│   │   ├── 84/
+│   │   ├── 85/
+│   │   ├── 86/
+│   │   ├── 87/
+│   │   ├── 88/
+│   │   ├── 89/
+│   │   ├── 8a/
+│   │   ├── 8b/
+│   │   ├── 8c/
+│   │   ├── 8d/
+│   │   ├── 8e/
+│   │   ├── 8f/
+│   │   ├── 90/
+│   │   ├── 91/
+│   │   ├── 92/
+│   │   ├── 93/
+│   │   ├── 94/
+│   │   ├── 95/
+│   │   ├── 96/
+│   │   ├── 97/
+│   │   ├── 98/
+│   │   ├── 99/
+│   │   ├── 9a/
+│   │   ├── 9b/
+│   │   ├── 9c/
+│   │   ├── 9d/
+│   │   ├── 9e/
+│   │   ├── 9f/
+│   │   ├── a0/
+│   │   ├── a1/
+│   │   ├── a2/
+│   │   ├── a3/
+│   │   ├── a4/
+│   │   ├── a5/
+│   │   ├── a7/
+│   │   ├── a8/
+│   │   ├── a9/
+│   │   ├── aa/
+│   │   ├── ab/
+│   │   ├── ac/
+│   │   ├── ad/
+│   │   ├── ae/
+│   │   ├── af/
+│   │   ├── b0/
+│   │   ├── b1/
+│   │   ├── b2/
+│   │   ├── b3/
+│   │   ├── b4/
+│   │   ├── b5/
+│   │   ├── b6/
+│   │   ├── b7/
+│   │   ├── b8/
+│   │   ├── b9/
+│   │   ├── ba/
+│   │   ├── bb/
+│   │   ├── bc/
+│   │   ├── bd/
+│   │   ├── be/
+│   │   ├── bf/
+│   │   ├── c0/
+│   │   ├── c1/
+│   │   ├── c2/
+│   │   ├── c3/
+│   │   ├── c4/
+│   │   ├── c5/
+│   │   ├── c6/
+│   │   ├── c7/
+│   │   ├── c8/
+│   │   ├── c9/
+│   │   ├── ca/
+│   │   ├── cb/
+│   │   ├── cc/
+│   │   ├── cd/
+│   │   ├── ce/
+│   │   ├── cf/
+│   │   ├── d0/
+│   │   ├── d1/
+│   │   ├── d2/
+│   │   ├── d3/
+│   │   ├── d4/
+│   │   ├── d5/
+│   │   ├── d6/
+│   │   ├── d7/
+│   │   ├── d8/
+│   │   ├── d9/
+│   │   ├── da/
+│   │   ├── db/
+│   │   ├── dc/
+│   │   ├── dd/
+│   │   ├── de/
+│   │   ├── e0/
+│   │   ├── e1/
+│   │   ├── e2/
+│   │   ├── e3/
+│   │   ├── e4/
+│   │   ├── e5/
+│   │   ├── e6/
+│   │   ├── e7/
+│   │   ├── e8/
+│   │   ├── e9/
+│   │   ├── ea/
+│   │   ├── eb/
+│   │   ├── ec/
+│   │   ├── ed/
+│   │   ├── ee/
+│   │   ├── ef/
+│   │   ├── f0/
+│   │   ├── f1/
+│   │   ├── f2/
+│   │   ├── f3/
+│   │   ├── f4/
+│   │   ├── f5/
+│   │   ├── f6/
+│   │   ├── f7/
+│   │   ├── f8/
+│   │   ├── f9/
+│   │   ├── fa/
+│   │   ├── fb/
+│   │   ├── fc/
+│   │   ├── fd/
+│   │   ├── fe/
+│   │   └── ff/
+│   └── refs/
+│       ├── heads/
+│       ├── remotes/
+│       │   └── origin/
+│       └── tags/
+├── .vscode/
+├── CubismSdkForNative-5-r.1/
+│   ├── Core/
+│   │   ├── dll/
+│   │   │   ├── android/
+│   │   │   │   ├── arm64-v8a/
+│   │   │   │   ├── armeabi-v7a/
+│   │   │   │   ├── x86/
+│   │   │   │   └── x86_64/
+│   │   │   ├── experimental/
+│   │   │   │   ├── rpi/
+│   │   │   │   └── uwp/
+│   │   │   │       ├── arm/
+│   │   │   │       ├── arm64/
+│   │   │   │       ├── x64/
+│   │   │   │       └── x86/
+│   │   │   ├── linux/
+│   │   │   │   └── x86_64/
+│   │   │   ├── macos/
+│   │   │   └── windows/
+│   │   ├── include/
+│   │   └── lib/
+│   │       ├── android/
+│   │       │   ├── arm64-v8a/
+│   │       │   ├── armeabi-v7a/
+│   │       │   ├── x86/
+│   │       │   └── x86_64/
+│   │       ├── experimental/
+│   │       │   ├── catalyst/
+│   │       │   └── rpi/
+│   │       ├── ios/
+│   │       │   ├── Debug-iphoneos/
+│   │       │   ├── Debug-iphonesimulator/
+│   │       │   ├── Release-iphoneos/
+│   │       │   └── Release-iphonesimulator/
+│   │       ├── linux/
+│   │       │   └── x86_64/
+│   │       ├── macos/
+│   │       │   ├── arm64/
+│   │       │   └── x86_64/
+│   │       └── windows/
+│   │           ├── x86/
+│   │           │   ├── 120/
+│   │           │   ├── 140/
+│   │           │   ├── 141/
+│   │           │   ├── 142/
+│   │           │   └── 143/
+│   │           └── x86_64/
+│   ├── Framework/
+│   │   └── src/
+│   │       ├── Effect/
+│   │       ├── Id/
+│   │       ├── Math/
+│   │       ├── Model/
+│   │       ├── Motion/
+│   │       ├── Physics/
+│   │       ├── Rendering/
+│   │       │   ├── Cocos2d/
+│   │       │   ├── D3D11/
+│   │       │   ├── D3D9/
+│   │       │   ├── Metal/
+│   │       │   ├── OpenGL/
+│   │       │   └── Vulkan/
+│   │       │       └── Shaders/
+│   │       │           └── src/
+│   │       ├── Type/
+│   │       └── Utils/
+│   └── Samples/
+│       ├── Cocos2d-x/
+│       ├── D3D11/
+│       ├── D3D9/
+│       ├── Metal/
+│       ├── OpenGL/
+│       ├── Resources/
+│       └── Vulkan/
+├── gui/
+│   └── game/
+│       └── gui/
+├── launcher/
+│   ├── game/
+│   │   ├── fonts/
+│   │   ├── gui7/
+│   │   ├── images/
+│   │   └── tl/
+│   │       ├── arabic/
+│   │       ├── danish/
+│   │       ├── finnish/
+│   │       ├── french/
+│   │       ├── german/
+│   │       ├── greek/
+│   │       ├── indonesian/
+│   │       ├── italian/
+│   │       ├── japanese/
+│   │       ├── korean/
+│   │       ├── malay/
+│   │       ├── piglatin/
+│   │       ├── polish/
+│   │       ├── portuguese/
+│   │       ├── russian/
+│   │       ├── schinese/
+│   │       ├── spanish/
+│   │       ├── tchinese/
+│   │       ├── turkish/
+│   │       ├── ukrainian/
+│   │       └── vietnamese/
+│   └── skin/
+├── module/
+│   ├── emoji/
+│   ├── include/
+│   ├── libhydrogen/
+│   │   └── impl/
+│   │       ├── gimli-core/
+│   │       └── random/
+│   ├── tinyfiledialogs/
+│   └── uguu/
 ├── renpy/
-├── logs/
-└── README.md
+│   ├── audio/
+│   ├── common/
+│   │   ├── _compat/
+│   │   ├── _developer/
+│   │   ├── _layout/
+│   │   ├── _outline/
+│   │   ├── _placeholder/
+│   │   ├── _roundrect/
+│   │   ├── _theme_amie2/
+│   │   ├── _theme_austen/
+│   │   ├── _theme_awt/
+│   │   ├── _theme_bordered/
+│   │   ├── _theme_crayon/
+│   │   ├── _theme_diamond/
+│   │   ├── _theme_glow/
+│   │   ├── _theme_marker/
+│   │   ├── _theme_regal/
+│   │   ├── _theme_threeD/
+│   │   └── _theme_tv/
+│   ├── compat/
+│   ├── display/
+│   ├── exports/
+│   ├── gl2/
+│   ├── live2d/
+│   ├── sl2/
+│   ├── styledata/
+│   ├── test/
+│   ├── text/
+│   ├── translation/
+│   ├── uguu/
+│   └── update/
+├── scripts/
+│   ├── mac/
+│   ├── pyi/
+│   │   └── android/
+│   └── rt/
+├── sdk-fonts/
+├── sphinx/
+│   ├── game/
+│   └── source/
+│       ├── _static/
+│       ├── _templates/
+│       ├── gui/
+│       ├── oshs/
+│       │   └── game/
+│       │       ├── gui/
+│       │       │   ├── bar/
+│       │       │   ├── button/
+│       │       │   ├── overlay/
+│       │       │   ├── phone/
+│       │       │   │   └── overlay/
+│       │       │   ├── scrollbar/
+│       │       │   └── slider/
+│       │       └── images/
+│       ├── presplash/
+│       └── quickstart/
+├── testcases/
+│   └── game/
+│       └── sound/
+├── the_question/
+│   └── game/
+│       ├── gui/
+│       │   ├── bar/
+│       │   ├── button/
+│       │   ├── overlay/
+│       │   ├── phone/
+│       │   │   └── overlay/
+│       │   ├── scrollbar/
+│       │   └── slider/
+│       ├── images/
+│       └── tl/
+│           ├── None/
+│           ├── czech/
+│           ├── danish/
+│           ├── french/
+│           ├── italian/
+│           ├── japanese/
+│           ├── korean/
+│           ├── malay/
+│           ├── russian/
+│           ├── schinese/
+│           ├── spanish/
+│           ├── tchinese/
+│           └── ukrainian/
+├── tutorial/
+│   └── game/
+│       ├── gui/
+│       │   ├── bar/
+│       │   ├── button/
+│       │   ├── overlay/
+│       │   ├── phone/
+│       │   │   └── overlay/
+│       │   ├── scrollbar/
+│       │   └── slider/
+│       ├── images/
+│       └── tl/
+│           ├── None/
+│           ├── french/
+│           ├── japanese/
+│           ├── korean/
+│           ├── piglatin/
+│           ├── russian/
+│           ├── schinese/
+│           ├── spanish/
+│           └── ukrainian/
+└── unittests/
 ```
 
 **Key Components:**
 
-- **assets/**: Contains all game assets, including images, audio files, fonts, and Live2D models.
-- **game/**: Houses the main game scripts written in Ren'Py’s scripting language.
-- **library/**: Includes custom modules and libraries, such as the Live2D integration module and utility scripts.
-- **renpy/**: The core Ren'Py engine files.
-- **logs/**: Stores log files for debugging and monitoring purposes.
-- **README.md**: Documentation and instructions for the project.
+- **.git/**: Contains the Git repository's configuration, hooks, objects, references, and internal data.
+- **.vscode/**: Configuration files for Visual Studio Code IDE.
+- **CubismSdkForNative-5-r.1/**: The Live2D Cubism SDK integrated into the project.
+  - **Core/**: Core components including DLLs, headers, and libraries for various platforms.
+    - **dll/**: Compiled DLLs for Android, Experimental platforms (Raspberry Pi, UWP), Linux, macOS, and Windows.
+    - **include/**: Header files for SDK APIs.
+    - **lib/**: Libraries for different platforms, mirroring the structure in `dll/`.
+  - **Framework/**: Source code implementing effects, IDs, mathematical utilities, models, motions, physics simulations, and rendering engines.
+    - **Rendering/**: Subdirectories for different rendering backends such as Cocos2d, Direct3D 11 and 9, Metal, OpenGL, and Vulkan. The Vulkan subdirectory includes shader source files.
+  - **Samples/**: Example projects demonstrating SDK functionalities across various platforms and rendering engines.
+- **gui/**: Graphical User Interface components specific to the game.
+- **launcher/**: Manages game launching features, including fonts, images, translation files (`tl/`), and skins.
+  - **tl/**: Contains localization directories for various languages.
+- **module/**: Contains additional modules like emoji support, libhydrogen (with implementation for gimli-core and random), tinyfiledialogs (for dialog boxes), and uguu (utility scripts).
+- **renpy/**: Core Ren'Py engine components.
+  - **audio/**: Audio handling modules.
+  - **common/**: Common modules including compatibility, developer tools, layout, outlines, placeholders, rounded rectangles, and various UI themes.
+  - **compat/**: Compatibility-related modules.
+  - **display/**: Display and rendering modules.
+  - **exports/**: Export functionalities.
+  - **gl2/**: OpenGL 2 functionalities.
+  - **live2d/**: Integration modules for Live2D models.
+  - **sl2/**: Scripting language extensions or similar components.
+  - **styledata/**: Style data for UI components.
+  - **test/**: Testing modules.
+  - **text/**: Text processing modules.
+  - **translation/**: Translation handling modules.
+  - **uguu/**: Utility scripts.
+  - **update/**: Update management modules.
+- **scripts/**: Various scripts for building, deployment, and runtime.
+  - **mac/**: Mac-specific scripts.
+  - **pyi/android/**: Python interface scripts for Android.
+  - **rt/**: Runtime scripts.
+- **sdk-fonts/**: Fonts used by the SDK.
+- **sphinx/**: Documentation generated by Sphinx.
+  - **game/**: Game-specific documentation.
+  - **source/**: Source files for Sphinx documentation, including static files, templates, GUI components, scripts, and quickstart guides.
+- **testcases/**: Test cases for the game, organized by module (e.g., sound).
+- **the_question/**: Example or test game named "the_question" with GUI, images, and translations.
+- **tutorial/**: Tutorial game project with GUI, images, and translations.
+- **unittests/**: Unit test suites.
+
+---
 
 ### 3.2 Live2D Cubism SDK Project Structure
 
 **Overview:**  
-The Live2D Cubism SDK provides tools and libraries for integrating Live2D models into applications. Its structure is designed to support model loading, rendering, animation, and interaction functionalities.
+The Live2D Cubism SDK integrated within the Ren'Py project provides tools and libraries for integrating Live2D models into the visual novel engine. Its structure supports model loading, rendering, animation, and interaction functionalities necessary for dynamic and expressive character animations.
 
 **Directory Structure:**
 
-```plaintext
-live2d_sdk/
-├── include/
-│   └── cubism/
-├── lib/
-│   ├── windows/
-│   ├── macos/
-│   └── linux/
-├── samples/
-│   ├── basic_demo/
-│   ├── advanced_demo/
-│   └── physics_demo/
-├── tools/
-│   ├── editor/
-│   └── exporter/
-├── docs/
-│   └── API_reference.md
-└── README.md
+```plaintext:renpy/arch_design_doc.md
+CubismSdkForNative-5-r.1/
+├── Core/
+│   ├── dll/
+│   │   ├── android/
+│   │   │   ├── arm64-v8a/
+│   │   │   ├── armeabi-v7a/
+│   │   │   ├── x86/
+│   │   │   └── x86_64/
+│   │   ├── experimental/
+│   │   │   ├── rpi/
+│   │   │   └── uwp/
+│   │   │       ├── arm/
+│   │   │       ├── arm64/
+│   │   │       ├── x64/
+│   │   │       └── x86/
+│   │   ├── linux/
+│   │   │   └── x86_64/
+│   │   ├── macos/
+│   │   └── windows/
+│   ├── include/
+│   └── lib/
+│       ├── android/
+│       │   ├── arm64-v8a/
+│       │   ├── armeabi-v7a/
+│       │   ├── x86/
+│       │   └── x86_64/
+│       ├── experimental/
+│       │   ├── catalyst/
+│       │   └── rpi/
+│       ├── ios/
+│       │   ├── Debug-iphoneos/
+│       │   ├── Debug-iphonesimulator/
+│       │   ├── Release-iphoneos/
+│       │   └── Release-iphonesimulator/
+│       ├── linux/
+│       │   └── x86_64/
+│       ├── macos/
+│       │   ├── arm64/
+│       │   └── x86_64/
+│       └── windows/
+│           ├── x86/
+│           │   ├── 120/
+│           │   ├── 140/
+│           │   ├── 141/
+│           │   ├── 142/
+│           │   └── 143/
+│           └── x86_64/
+├── Framework/
+│   └── src/
+│       ├── Effect/
+│       ├── Id/
+│       ├── Math/
+│       ├── Model/
+│       ├── Motion/
+│       ├── Physics/
+│       ├── Rendering/
+│       │   ├── Cocos2d/
+│       │   ├── D3D11/
+│       │   ├── D3D9/
+│       │   ├── Metal/
+│       │   ├── OpenGL/
+│       │   └── Vulkan/
+│       │       └── Shaders/
+│       │           └── src/
+│       ├── Type/
+│       └── Utils/
+└── Samples/
+    ├── Cocos2d-x/
+    ├── D3D11/
+    ├── D3D9/
+    ├── Metal/
+    ├── OpenGL/
+    ├── Resources/
+    └── Vulkan/
 ```
 
 **Key Components:**
 
-- **include/**: Header files for the SDK’s APIs.
-- **lib/**: Compiled libraries for different operating systems.
-- **samples/**: Example projects demonstrating various SDK functionalities.
-- **tools/**: Auxiliary tools for model editing and exporting.
-- **docs/**: Documentation, including API references and usage guides.
-- **README.md**: Overview and setup instructions for the SDK.
+- **Core/**: Manages fundamental components including dynamic link libraries (DLLs) for various platforms, header files, and library files.
+  - **dll/**: Compiled DLLs for Android, Experimental platforms (Raspberry Pi, UWP), Linux, macOS, and Windows.
+  - **include/**: Header files for SDK APIs.
+  - **lib/**: Libraries for different platforms, mirroring the structure in `dll/`.
+- **Framework/**: Contains source code implementing effects, IDs, mathematical utilities, models, motions, physics simulations, and rendering engines.
+  - **Rendering/**: Subdirectories for different rendering backends such as Cocos2d, Direct3D 11 and 9, Metal, OpenGL, and Vulkan. The Vulkan subdirectory includes shader source files.
+- **Samples/**: Example projects demonstrating SDK functionalities across various platforms and rendering engines.
+
+---
 
 ### 3.3 Optimized Integrated Project Structure
 
 **Proposed Directory Structure:**
 
-```plaintext
+```plaintext:renpy/arch_design_doc.md
 integrated_project/
 ├── assets/
 │   ├── images/
@@ -309,10 +895,11 @@ integrated_project/
 │   ├── live2d_integration/
 │   │   ├── model_loader.py
 │   │   ├── animation_controller.py
-│   │   ├── physics_handler.py
 │   │   ├── lip_sync_manager.py
+│   │   ├── physics_handler.py
 │   │   └── shader_manager.py
-│   └── utils/
+│   ├── utils/
+│   └── docs/
 ├── sdk/
 │   ├── include/
 │   │   └── cubism/
@@ -321,18 +908,32 @@ integrated_project/
 │   │   ├── macos/
 │   │   └── linux/
 │   └── docs/
+├── tests/
+│   └── live2d_integration/
+│       ├── test_model_loader.py
+│       ├── test_animation_controller.py
+│       └── ...
+├── build_scripts/
+│   ├── build.sh
+│   └── deploy.sh
 ├── renpy/
 ├── logs/
+├── .github/
+│   └── workflows/
+│       └── ci.yml
 └── README.md
 ```
 
 **Key Enhancements:**
 
-- **Integrated SDK:** Placing the Live2D Cubism SDK within an `sdk/` directory keeps third-party libraries separate from game logic and assets.
-- **Live2D Integration Module:** Housing Live2D-specific Python scripts within `library/live2d_integration/` ensures modularity and separation of concerns.
-- **Scripts Organization:** Organizing Ren'Py scripts within a `scripts/` folder under `game/` promotes clarity and maintainability.
+- **Integrated SDK:** The Live2D Cubism SDK is housed within the `sdk/` directory, keeping third-party libraries separate from game logic and assets.
+- **Live2D Integration Module:** Live2D-specific Python scripts reside in `library/live2d_integration/`, ensuring modularity and separation of concerns.
+- **Scripts Organization:** Ren'Py scripts are organized within a `scripts/` folder under `game/` to promote clarity and maintainability.
 - **Asset Management:** All Live2D models are centralized within `assets/live2d_models/` for easy access and management.
-- **Documentation and Tools:** Maintaining SDK documentation and tools within the integrated project ensures that all resources are readily available to developers.
+- **Documentation and Tools:** SDK documentation and tools are maintained within the integrated project to ensure that all resources are readily available to developers.
+- **Testing Infrastructure:** Test scripts are organized within the `tests/` directory, specifically under `live2d_integration/`, to promote organized and comprehensive testing practices.
+- **Build and Deployment Scripts:** Automated build and deployment scripts are placed in the `build_scripts/` directory to facilitate consistent and efficient project builds across different environments.
+- **Continuous Integration:** CI configurations are stored under the `.github/workflows/` directory, ensuring that automated processes are version-controlled and easily manageable.
 
 ### 3.4 UML Diagram of Integrated Architecture
 
@@ -437,7 +1038,7 @@ Maintain visual consistency in naming and structuring directories and files to e
 
 **Example Enhanced Project Structure:**
 
-```plaintext
+```plaintext:renpy/arch_design_doc.md
 integrated_project/
 ├── assets/
 │   ├── images/
