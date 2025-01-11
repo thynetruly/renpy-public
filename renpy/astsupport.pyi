@@ -1,4 +1,4 @@
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -19,26 +19,44 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from __future__ import print_function
+from typing import Any
 
-cdef extern from "fribidi/fribidi.h":
-    int FRIBIDI_TYPE_LTR
-    int FRIBIDI_TYPE_ON
-    int FRIBIDI_TYPE_RTL
-    int FRIBIDI_TYPE_WR
-    int FRIBIDI_TYPE_WL
+def hash32(s : Any) -> int:
+    """
+    Returns a stable 32-bit hash of the string `s`.
 
-cdef extern from "renpybidicore.h":
-    object renpybidi_log2vis(object, int *)
-
-WLTR = FRIBIDI_TYPE_WL
-LTR = FRIBIDI_TYPE_LTR
-ON = FRIBIDI_TYPE_ON
-RTL = FRIBIDI_TYPE_RTL
-WRTL = FRIBIDI_TYPE_WR
+    `s`
+        A unicode string. Other types will be coerced to unicode before hashing.
+    """
 
 
-def log2vis(s, int direction=FRIBIDI_TYPE_ON):
+def hash64(s : Any) -> int:
+    """
+    Returns a stable 64-bit hash of the string `s`.
 
-    s = renpybidi_log2vis(s, &direction)
-    return s, direction
+    `s`
+        A unicode string. Other types will be coerced to unicode before hashing.
+    """
+
+class PyExpr(str):
+    """
+    Represents a string containing python expression.
+    """
+
+    filename: str
+    linenumber: int
+    py: int
+    hashcode: int
+
+    @staticmethod
+    def checkpoint() -> Any:
+        """
+        Checkpoints the pyexpr list. Returns an opaque object that can be used
+        with PyExpr.revert to revert the list.
+        """
+
+    @staticmethod
+    def revert(opaque: Any):
+        """
+        Reverts the pyexpr list to the state it was in when checkpoint was called.
+        """

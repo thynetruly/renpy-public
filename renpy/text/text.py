@@ -1,4 +1,4 @@
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -285,9 +285,12 @@ class TextSegment(object):
     def __repr__(self):
         return "<TextSegment font={font}, size={size}, bold={bold}, italic={italic}, underline={underline}, color={color}, black_color={black_color}, hyperlink={hyperlink}, vertical={vertical}>".format(**self.__dict__)
 
-    def take_style(self, style, layout):
+    def take_style(self, style, layout, context=None):
         """
         Takes the style of this text segment from the named style object.
+
+        `context`
+            Text given the context the style is taken in. Used to produce error messages.
         """
 
         self.antialias = style.antialias
@@ -325,7 +328,12 @@ class TextSegment(object):
         self.axis = style.axis
         self.instance = style.instance
 
+        if context and style.textshader and not self.shader:
+            raise Exception("%s supplies a textshader, but the Text displayable does not use textshaders. Consider using config.default_textshader to opt-in." % (context,))
+
         self.shader = renpy.text.shader.get_textshader(style.textshader)
+
+
 
     # From here down is the public glyph API.
 
@@ -508,9 +516,6 @@ class DisplayableSegment(object):
 
         self.width, self.height = rend.get_size()
 
-        if isinstance(d, renpy.display.behavior.CaretBlink):
-            self.width = 0
-
         self.hyperlink = ts.hyperlink
         self.cps = ts.cps
         self.ruby_top = ts.ruby_top
@@ -530,7 +535,7 @@ class DisplayableSegment(object):
         glyph.character = 0xfffc
         glyph.ascent = 0
         glyph.line_spacing = h
-        glyph.advance = w
+        glyph.advance = 0 if isinstance(self.d, renpy.display.behavior.CaretBlink) else w
         glyph.width = w
         glyph.shader = self.shader
 
@@ -1224,10 +1229,12 @@ class Layout(object):
 
         def fill_empty_line():
             for i in line:
-                if isinstance(i[0], (TextSegment, SpaceSegment, DisplayableSegment)):
+                if isinstance(i[0], TextSegment):
                     return
 
             line.extend(tss[-1].subsegment(u"\u200B")) # type: ignore
+
+        done = False
 
         for type, text in tokens: # @ReservedAssignment
 
@@ -1247,8 +1254,7 @@ class Layout(object):
                 elif type == TEXT:
 
                     if (text_displayable.mask is not None):
-                        if text != u"\u200b":
-                            text = text_displayable.mask * len(text)
+                        text = text_displayable.mask * len(text)
 
                     line.extend(self.create_text_segments(text, tss[-1], style))
 
@@ -1323,6 +1329,7 @@ class Layout(object):
                     pass
 
                 elif tag == "done":
+                    done = True
                     pass
 
                 elif tag == "nw":
@@ -1355,7 +1362,7 @@ class Layout(object):
                     vert_style = ts.vertical
                     size = ts.size
 
-                    ts.take_style(hls, self)
+                    ts.take_style(hls, self, "A hyperlink style")
 
                     ts.vertical = vert_style
                     ts.hyperlink = link
@@ -1389,7 +1396,7 @@ class Layout(object):
 
                 elif tag == "":
                     style = getattr(renpy.store.style, value)
-                    push().take_style(style, self)
+                    push().take_style(style, self, "The %s style" % value)
 
                 elif tag == "font":
                     value = renpy.config.font_name_map.get(value, value)
@@ -1451,7 +1458,7 @@ class Layout(object):
                     ts = push()
                     # inherit vertical style
                     vert_style = ts.vertical
-                    ts.take_style(style.ruby_style, self)
+                    ts.take_style(style.ruby_style, self, "The ruby style")
                     ts.vertical = vert_style
                     ts.ruby_top = True
                     self.has_ruby = True
@@ -1460,7 +1467,7 @@ class Layout(object):
                     ts = push()
                     # inherit vertical style
                     vert_style = ts.vertical
-                    ts.take_style(style.altruby_style, self)
+                    ts.take_style(style.altruby_style, self, "The altruby style")
                     ts.vertical = vert_style
                     ts.ruby_top = "alt"
                     self.has_ruby = True
@@ -1530,6 +1537,9 @@ class Layout(object):
                     raise Exception("Unknown text tag %r" % text)
 
             except Exception:
+                if done:
+                    break
+
                 renpy.game.exception_info = "While processing text tag {{{!s}}} in {!r}.:".format(text, text_displayable.get_all_text())
                 raise
 
@@ -1570,7 +1580,7 @@ class Layout(object):
         l = [ ]
 
         for ts, s in p:
-            s, direction = log2vis(unicode(s), direction)
+            s, direction = log2vis(str(s), direction)
             l.append((ts, s))
 
         rtl = (direction == RTL or direction == WRTL)
@@ -1815,9 +1825,6 @@ class Layout(object):
                 if g.time == -1:
                     continue
 
-                # Check that this is the right shader to use.
-                if (g.shader is not ts) and (g.shader != ts):
-                    continue
 
                 # The x-coordinate of the right edge of the glyph.
                 if g is last_glyph:
@@ -1846,15 +1853,19 @@ class Layout(object):
                     left_time = g.time - duration
                     right_time = g.time
 
-                mesh.add_glyph(
-                    tw, th,
-                    cx, cy,
-                    g.index,
-                    left, top, right, bottom,
-                    left_time, right_time,
-                    g.ascent, g.descent,
-                    self.add_left, self.add_top,
-                )
+
+                # Check that this is the right shader to use.
+                if (g.shader is ts) or (g.shader == ts):
+
+                    mesh.add_glyph(
+                        tw, th,
+                        cx, cy,
+                        g.index,
+                        left, top, right, bottom,
+                        left_time, right_time,
+                        g.ascent, g.descent,
+                        self.add_left, self.add_top,
+                    )
 
                 last_time = g.time
                 last_index = g.index
@@ -2036,7 +2047,7 @@ class Text(renpy.display.displayable.Displayable):
 
             # Check that the text is all text-able things.
             for i in text:
-                if not isinstance(i, (basestring, renpy.display.displayable.Displayable)):
+                if not isinstance(i, (str, renpy.display.displayable.Displayable)):
                     if renpy.config.developer:
                         raise Exception("Cannot display {0!r} as text.".format(i))
                     else:
@@ -2124,8 +2135,8 @@ class Text(renpy.display.displayable.Displayable):
         s = ""
 
         for i in self.text:
-            if isinstance(i, basestring):
-                s += i # type: ignore
+            if isinstance(i, str):
+                s += i
 
             if len(s) > 25:
                 s = s[:24] + u"\u2026"
@@ -2140,8 +2151,8 @@ class Text(renpy.display.displayable.Displayable):
         s = u""
 
         for i in self.text:
-            if isinstance(i, basestring):
-                s += i # type: ignore
+            if isinstance(i, str):
+                s += i
 
         return s
 
@@ -2190,13 +2201,10 @@ class Text(renpy.display.displayable.Displayable):
 
         # Perform substitution as necessary.
         for i in text:
-            if isinstance(i, basestring):
+            if isinstance(i, str):
                 if substitute is not False:
                     i, did_sub = renpy.substitutions.substitute(i, scope, substitute) # type: ignore
                     uses_scope = uses_scope or did_sub
-
-                if isinstance(i, bytes):
-                    i = str(i, "utf-8", "replace")
 
             new_text.append(i)
 
@@ -2330,7 +2338,7 @@ class Text(renpy.display.displayable.Displayable):
 
         for i in self.text:
 
-            if not isinstance(i, basestring):
+            if not isinstance(i, str):
                 continue
 
             rv.append(i)
@@ -2669,6 +2677,10 @@ class Text(renpy.display.displayable.Displayable):
                 yo = y + yo + layout.yoffset
 
                 drend.absolute_blit(renders[d], (xo, yo))
+
+                if layout.reverse:
+                    xo, yo = layout.reverse.transform(xo, yo)
+
                 self.displayable_offsets.append((d, xo, yo))
 
             rv.blit(drend, (0, 0))
@@ -2812,9 +2824,6 @@ class Text(renpy.display.displayable.Displayable):
 
             if isinstance(i, str):
                 tokens.extend(textsupport.tokenize(i))
-
-            elif isinstance(i, basestring):
-                tokens.extend(textsupport.tokenize(str(i)))
 
             elif isinstance(i, renpy.display.displayable.Displayable):
                 tokens.append((DISPLAYABLE, i))

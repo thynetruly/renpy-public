@@ -1,4 +1,4 @@
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -257,12 +257,6 @@ class absolute(float):
         return absolute(absolute.compute_raw(value, room))
 
 for fn in (
-    '__coerce__', # PY2
-    '__div__', # PY2
-    '__long__', # PY2
-    '__nonzero__', # PY2
-    '__rdiv__', # PY2
-
     '__abs__',
     '__add__',
     # '__bool__', # non-float
@@ -303,11 +297,10 @@ for fn in (
     # 'hex', # non-float
     # 'is_integer', # non-float
 ):
-    f = getattr(float, fn, None)
-    if f is not None: # for PY2-only and PY3-only methods
-        setattr(absolute, fn, absolute_wrap(f))
+    f = getattr(float, fn)
+    setattr(absolute, fn, absolute_wrap(f))
 
-del absolute_wrap, fn, f # type: ignore
+del absolute_wrap, fn, f  # type: ignore
 
 
 
@@ -994,6 +987,14 @@ class Interface(object):
         if renpy.android:
             self.check_android_start()
 
+        gc.collect()
+
+        if gc.garbage:
+            del gc.garbage[:]
+
+        # Kill off the presplash.
+        renpy.display.presplash.end()
+
         # Initialize audio.
         pygame.display.hint("SDL_APP_NAME", (renpy.config.name or "Ren'Py Game").encode("utf-8"))
         pygame.display.hint("SDL_AUDIO_DEVICE_APP_NAME", (renpy.config.name or "Ren'Py Game").encode("utf-8"))
@@ -1011,15 +1012,7 @@ class Interface(object):
 
         renpy.display.emulator.init_emulator()
 
-        gc.collect()
-
-        if gc.garbage:
-            del gc.garbage[:]
-
         renpy.display.render.render_ready()
-
-        # Kill off the presplash.
-        renpy.display.presplash.end()
 
         # If we are on the web browser, start preloading the browser cache.
         if renpy.emscripten and renpy.game.preferences.web_cache_preload:
@@ -1133,7 +1126,7 @@ class Interface(object):
         if renpy.android:
             from jnius import autoclass
             PythonSDLActivity = autoclass("org.renpy.android.PythonSDLActivity")
-            PythonSDLActivity.hidePresplash()
+            PythonSDLActivity.mActivity.hidePresplash()
 
             print("Hid presplash.")
 
@@ -1393,7 +1386,7 @@ class Interface(object):
             self.after_first_frame()
             self.first_frame = False
 
-    def take_screenshot(self, scale, background=False):
+    def take_screenshot(self, scale, background=False, keep_existing=False):
         """
         This takes a screenshot of the current screen, and stores it so
         that it can gotten using get_screenshot()
@@ -1401,7 +1394,13 @@ class Interface(object):
         `background`
            If true, we're in a background thread. So queue the request
            until it can be handled by the main thread.
+
+        `keep_existing`
+            If true, the existing screenshot is kept.
         """
+
+        if self.screenshot and keep_existing:
+            return
 
         self.clear_screenshot = False
 

@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -139,11 +139,14 @@ init -1700 python:
     def _default_empty_window():
 
         try:
+
             scry = renpy.scry()
+
+            window_hide = renpy.get_statement_name() == "window hide"
 
             # When running in a say statement or menu-with-caption, scry for
             # the next say statement, and get the window from that.
-            if scry.say or scry.menu_with_caption or store._window_next:
+            if (scry.say or scry.menu_with_caption or store._window_next) and not window_hide:
                 who = None
 
                 for i in range(20):
@@ -187,7 +190,7 @@ init -1700 python:
 
             if who is None:
                 who = narrator
-            elif isinstance(who, basestring):
+            elif isinstance(who, str):
                 who = Character(who, kind=name_only)
 
             return who

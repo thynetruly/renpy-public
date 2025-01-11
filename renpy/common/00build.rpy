@@ -1,4 +1,4 @@
-﻿# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+﻿# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -42,7 +42,7 @@ init -1500 python in build:
             return s
         elif isinstance(s, list):
             return s
-        elif isinstance(s, basestring):
+        elif isinstance(s, str):
             return s.split()
 
         raise Exception("Expected a string, list, or None.")
@@ -153,7 +153,6 @@ init -1500 python in build:
         ("*.dll", None),
         ("*.manifest", None),
         ("*.keystore", None),
-        ( "**.rpe", None),
         ( "**.rpe.py", None),
 
         ("update.pem", None),
@@ -212,7 +211,6 @@ init -1500 python in build:
         ("steam_appid.txt", None),
 
         ("game/" + renpy.script.BYTECODE_FILE, "all"),
-        ("game/cache/bytecode-311.rpyb", "web"),
         ("game/cache/bytecode-*.rpyb", None),
         ("game/cache/build_info.json", None),
         ("game/cache/build_time.txt", None),

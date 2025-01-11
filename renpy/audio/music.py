@@ -1,4 +1,4 @@
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -93,7 +93,7 @@ def play(filenames, channel="music", loop=None, fadeout=None, synchro_start=None
     if filenames is None:
         return
 
-    if isinstance(filenames, basestring):
+    if isinstance(filenames, str):
         filenames = [ filenames ]
 
     if get_pause(channel=channel):
@@ -136,6 +136,7 @@ def play(filenames, channel="music", loop=None, fadeout=None, synchro_start=None
 
             t = get_serial()
             ctx.last_changed = t
+            c.last_changed = t
 
             if loop:
                 ctx.last_filenames = filenames
@@ -199,7 +200,7 @@ def queue(filenames, channel="music", loop=None, clear_queue=True, fadein=0, tig
         filenames = [ ]
         loop = False
 
-    if isinstance(filenames, basestring):
+    if isinstance(filenames, str):
         filenames = [ filenames ]
 
     if renpy.config.skipping == "fast":
@@ -233,6 +234,7 @@ def queue(filenames, channel="music", loop=None, clear_queue=True, fadein=0, tig
 
             t = get_serial()
             ctx.last_changed = t
+            c.last_changed = t
 
             if loop:
                 ctx.last_filenames = filenames
@@ -259,7 +261,7 @@ def playable(filename, channel="music"):
 
     c = get_channel(channel)
 
-    filename, _, _ = c.split_filename(filename, False)
+    filename, _, _, _ = c.split_filename(filename, False)
 
     return renpy.loader.loadable(filename, directory="audio")
 
@@ -305,6 +307,7 @@ def stop(channel="music", fadeout=None):
 
             t = get_serial()
             ctx.last_changed = t
+            c.last_changed = t
             ctx.last_filenames = [ ]
             ctx.last_tight = False
 

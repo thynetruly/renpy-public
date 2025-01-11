@@ -1,4 +1,4 @@
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -268,7 +268,7 @@ def _find_image(layer, key, name, what):
     # If a specific image is requested, use it.
     if what is not None:
 
-        if isinstance(what, basestring):
+        if isinstance(what, str):
             what = tuple(what.split())
 
         return name, what
@@ -582,7 +582,7 @@ def toggle_fullscreen():
     renpy.game.preferences.fullscreen = not renpy.game.preferences.fullscreen # type: ignore
 
 
-def take_screenshot(scale=None, background=False):
+def take_screenshot(scale=None, background=False, keep_existing=False):
     """
     :doc: loadsave
     :args: ()
@@ -594,7 +594,7 @@ def take_screenshot(scale=None, background=False):
     if scale is None:
         scale = (renpy.config.thumbnail_width, renpy.config.thumbnail_height)
 
-    renpy.game.interface.take_screenshot(scale, background=background)
+    renpy.game.interface.take_screenshot(scale, background=background, keep_existing=keep_existing)
 
 
 def screenshot(filename):
@@ -768,7 +768,7 @@ def get_at_list(name, layer=None):
     If `layer` is None, uses the default layer for the given tag.
     """
 
-    if isinstance(name, basestring):
+    if isinstance(name, str):
         name = tuple(name.split())
 
     tag = name[0]

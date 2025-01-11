@@ -1,4 +1,4 @@
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -906,6 +906,12 @@ class Live2D(renpy.display.displayable.Displayable):
             raise Exception("Unknown blend mode {!r}".format(blend))
 
         self.common.model.blend_parameter(name, blend, value, weight)
+
+    def blend_opacity(self, name, blend, value, weight=1.0):
+        if blend not in ("Add", "Multiply", "Overwrite"):
+            raise Exception("Unknown blend mode {!r}".format(blend))
+
+        self.common.model.blend_opacity(name, blend, value, weight)
 
     def render(self, width, height, st, at):
 

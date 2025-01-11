@@ -1,4 +1,4 @@
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -91,7 +91,11 @@ class ParseError(Exception):
 
             lines = line.split('\n')
 
-            if len(lines) > 1:
+            if '"""' in lines[0]:
+                pass
+            elif "'''" in lines[0]:
+                pass
+            elif len(lines) > 1:
                 open_string = None
                 i = 0
 
@@ -489,7 +493,7 @@ def list_logical_lines(filename, filedata=None, linenumber=1, add_lines=False):
 
                 rest = word[2:]
 
-                if u"__" not in rest:
+                if (u"__" not in rest) and not rest.startswith("_"):
                     word = prefix + rest
 
             line.append(word)
@@ -1450,14 +1454,13 @@ class Lexer(object):
         object, which is called directly.
         """
 
-        if isinstance(thing, basestring):
-            name = name or thing
+        if isinstance(thing, str):
             rv = self.match(thing)
         else:
             rv = thing(**kwargs)
 
         if rv is None:
-            if isinstance(thing, basestring):
+            if isinstance(thing, str):
                 name = name or thing
             else:
                 name = name or thing.__func__.__name__
@@ -1592,6 +1595,11 @@ def ren_py_to_rpy(text, filename):
     """
 
     lines = text.splitlines()
+
+    # Skip the BOM, if any.
+    if lines and lines[0][:1] == u'\ufeff':
+        lines[0] = lines[0][1:]
+
     result = [ ]
 
     # The prefix prepended to Python lines.

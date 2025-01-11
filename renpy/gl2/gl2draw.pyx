@@ -1,6 +1,6 @@
 #cython: profile=False
 #@PydevCodeAnalysisIgnore
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -186,9 +186,6 @@ cdef class GL2Draw:
 
         visible_w = info.current_w
         visible_h = info.current_h
-
-        if renpy.windows and renpy.windows <= (6, 1):
-            visible_h -= 102
 
         # Determine the visible area of the current head.
         bounds = pygame.display.get_display_bounds(0)
@@ -1215,8 +1212,11 @@ cdef class GL2Draw:
         cdef unsigned char *rpp
         cdef int x, y, pitch
 
-        sw = render_tree.width * self.draw_per_virt
-        sh = render_tree.height * self.draw_per_virt
+        if render_tree is not None:
+            sw = render_tree.width * self.draw_per_virt
+            sh = render_tree.height * self.draw_per_virt
+        else:
+            sw, sh = self.drawable_size
 
         full = renpy.display.pgrender.surface_unscaled((sw, sh), True)
         surf = PySurface_AsSurface(full)
@@ -1355,6 +1355,9 @@ cdef class GL2DrawingContext:
         halfheight = self.height / 2.0
 
         sx, sy = transform.transform(0, 0)
+
+        sx = round(sx, 5)
+        sy = round(sy, 5)
 
         sx = sx * halfwidth + halfwidth
         sy = sy * halfheight + halfheight

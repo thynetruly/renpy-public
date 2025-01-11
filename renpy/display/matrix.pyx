@@ -1,4 +1,4 @@
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -182,6 +182,18 @@ cdef class Matrix:
         rv.wdw = other.wdw*self.wdw + other.xdw*self.wdx + other.ydw*self.wdy + other.zdw*self.wdz
 
         return rv
+
+    def is_2d_null(self):
+        """
+        Returns true if a 2D matrix always projects to 0 in the x or y directions.
+        """
+
+        if self.xdx == 0.0 and self.xdy == 0.0:
+            return True
+        if self.ydx == 0.0 and self.ydy == 0.0:
+            return True
+
+        return False
 
     def __repr__(Matrix self):
         cdef int x, y
