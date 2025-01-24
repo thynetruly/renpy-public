@@ -31,6 +31,7 @@ import zipfile
 import gc
 import linecache
 import json
+from pathlib import Path
 
 import renpy
 import renpy.game as game
@@ -363,7 +364,7 @@ def main():
     renpy.config.searchpath = renpy.__main__.predefined_searchpath(renpy.config.commondir) # E1101 @UndefinedVariable
 
     # Load Ren'Py extensions.
-    for dir in [ renpy.config.renpy_base ] + renpy.config.searchpath: # @ReservedAssignment
+    for dir in [ renpy.config.renpy_base ] + renpy.config.searchpath + [ os.path.join(renpy.config.gamedir, "libs") ]: # @ReservedAssignment
 
         if not os.path.isdir(dir):
             continue
@@ -385,15 +386,23 @@ def main():
     # Find archives.
     for dn in renpy.config.searchpath:
 
-        if not os.path.isdir(dn):
+        dn = Path(dn)
+
+        if not dn.is_dir():
             continue
 
-        for i in sorted(os.listdir(dn)):
-            base, ext = os.path.splitext(i)
+        archives = [ ]
 
-            # Check if the archive does not have any of the extensions in archive_extensions
-            if not (ext in archive_extensions):
-                continue
+        for ext in archive_extensions:
+            archives.extend(dn.glob(f"**/*{ext}"))
+
+        archives.sort()
+
+        for archive in archives:
+            arc_relpath = archive.relative_to(dn)
+            base = arc_relpath.stem
+            if arc_relpath.parent != Path("."):
+                base = os.path.join(arc_relpath.parent, arc_relpath.stem)
 
             renpy.config.archives.append(base)
 
