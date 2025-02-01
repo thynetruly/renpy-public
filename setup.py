@@ -80,6 +80,9 @@ def main():
     if cubism:
         setuplib.include_dirs.append("{}/Core/include".format(cubism))
 
+    pkgconfig_packages = "assimp\n" + pkgconfig_packages
+    library("assimp")
+
     # src/ directory.
     cython("_renpy", [ "src/IMG_savepng.c", "src/core.c" ])
     cython("_renpybidi", [ "src/renpybidicore.c" ])
@@ -128,6 +131,8 @@ def main():
 
     if cubism:
         cython("renpy.gl2.live2dmodel")
+
+    cython("renpy.gl2.assimp", language="c++")
 
     # renpy.text
     cython("renpy.text.textsupport")

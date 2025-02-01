@@ -251,6 +251,7 @@ name_blacklist = {
     "renpy.persistent.MP_instances",
     "renpy.exports.sdl_dll",
     "renpy.sl2.slast.serial",
+    "renpy.gl2.assimp.loader",
     "renpy.gl2.gl2draw.default_position",
     }
 
@@ -547,6 +548,7 @@ def import_all():
     import renpy.gl2.gl2shader
     import renpy.gl2.gl2texture
     import renpy.gl2.live2d
+    import renpy.gl2.assimp
 
     import renpy.minstore
     import renpy.defaultstore
