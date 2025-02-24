@@ -576,14 +576,17 @@ class Script(object):
         # Fix the filename for a renamed .rpyc file.
         if filename is not None:
             filename = renpy.lexer.elide_filename(filename)
+            if filename[-1] == "c":
+                filename = filename[:-1]
 
             if not all_stmts[0].filename.lower().endswith(filename.lower()):
 
-                if filename[-1] != "c":
-                    filename += "c"
+                filename += "c"
 
                 for i in all_stmts:
+                    old_name = i.name
                     i.filename = filename
+                    i.name = old_name
 
         def check_name(node):
 
@@ -617,12 +620,13 @@ class Script(object):
                     if renpy.config.allow_duplicate_labels:
                         return
 
+                    import linecache
                     self.duplicate_labels.append(
                         u'The label {} is defined twice, at File "{}", line {}:\n{}and File "{}", line {}:\n{}'.format(
                             bad_name, old_node.filename, old_node.linenumber,
-                            renpy.lexer.get_line_text(old_node.filename, old_node.linenumber),
+                            linecache.getline(old_node.filename, old_node.linenumber),
                             bad_node.filename, bad_node.linenumber,
-                            renpy.lexer.get_line_text(bad_node.filename, bad_node.linenumber),
+                            linecache.getline(bad_node.filename, bad_node.linenumber),
                         ))
 
         self.update_bytecode()
@@ -1051,21 +1055,17 @@ class Script(object):
 
                 renpy.game.exception_info = "While compiling python block starting at line %d of %s." % (i.linenumber, i.filename)
 
-                i.bytecode = renpy.python.py_compile(i.source, i.mode, filename=i.filename, lineno=i.linenumber, py=i.py, hashcode=i.hashcode)
+                i.bytecode = renpy.python.py_compile(i.source, i.mode, filename=i.filename, lineno=i.linenumber, py=i.py, hashcode=i.hashcode, column=i.col_offset)
 
             except SyntaxError as e:
-
-                text = e.text
-
-                if text is None:
-                    text = ''
-
+                assert e.filename is not None
+                assert e.lineno is not None
                 pem = renpy.parser.ParseError(
-                    filename=e.filename,
-                    number=e.lineno,
-                    msg=e.msg,
-                    line=text,
-                    pos=e.offset)
+                    e.msg,
+                    e.filename,
+                    e.lineno, e.offset,
+                    e.text,
+                    e.end_lineno, e.end_offset)
 
                 renpy.parser.parse_errors.append(pem.message)
 

@@ -186,6 +186,7 @@ Matrix = renpy.display.matrix.Matrix # @UndefinedVariable
 Live2D = renpy.gl2.live2d.Live2D
 
 Model = renpy.display.model.Model
+GLTFModel = renpy.gl2.assimp.GLTFModel
 
 # Currying things.
 Alpha = renpy.curry.curry(renpy.display.layout.Alpha)

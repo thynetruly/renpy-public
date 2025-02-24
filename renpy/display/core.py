@@ -389,7 +389,7 @@ class Renderer(object):
     and then:
     - "renderer", the name of the Renderer.
     - "resizable", true if the window can be resized.
-    - "additive", true if additive blendering is supported.
+    - "additive", true if additive blending is supported.
     - "models", true if model-based rendering is being used.
     """
 
@@ -404,7 +404,7 @@ class Renderer(object):
     def update(self, force=False):
         """
         This is called before a draw operation to check to see if the state of
-        the draw objects needs to be updated after an external event has occured.
+        the draw objects needs to be updated after an external event has occurred.
         Things that require draw updates might be:
 
         * The window has changed its size.
@@ -552,7 +552,7 @@ class Renderer(object):
     def mouse_event(self, ev):
         """
         This translates the .pos field of `ev` from physical coordinates to
-        virtual coordinates. Returns an (x, y) pait of virtual coordinates.
+        virtual coordinates. Returns an (x, y) pair of virtual coordinates.
         """
 
         return ev
@@ -677,7 +677,7 @@ class Interface(object):
         # The time at which this draw occurs.
         self.frame_time = 0
 
-        # The time when this interaction occured.
+        # The time when this interaction occurred.
         self.interact_time = None
 
         # The time we last tried to quit.
@@ -2235,7 +2235,7 @@ class Interface(object):
 
     def consider_gc(self):
         """
-        Considers if we should peform a garbage collection.
+        Considers if we should perform a garbage collection.
         """
 
         if not renpy.config.manage_gc:

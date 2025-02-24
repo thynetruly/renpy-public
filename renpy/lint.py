@@ -54,7 +54,7 @@ image_prefixes = None
 report_node = None
 
 # Collect define/default statements to check for duplication
-all_define_statments = {}
+all_define_statements = {}
 all_default_statements = {}
 
 # True if at east one error was reported, false otherwise.
@@ -143,7 +143,7 @@ def try_eval(where, expr, additional=None):
         The expression to try evaluating.
 
     `additional`
-        If given, an additional line of information that is addded to the
+        If given, an additional line of information that is added to the
         error message.
     """
 
@@ -187,7 +187,7 @@ def try_compile(where, expr, additional=None):
         The expression to try compiling.
 
     `additional`
-        If given, an additional line of information that is addded to the
+        If given, an additional line of information that is added to the
         error message.
     """
 
@@ -415,7 +415,7 @@ def check_show(node, precise):
     image_exists(name, expression, tag, precise=precise)
 
     for i in at_list:
-        try_eval("the at list of a scene or show statment", i, "Perhaps you forgot to define or misspelled a transform.")
+        try_eval("the at list of a scene or show statement", i, "Perhaps you forgot to define or misspelled a transform.")
 
 
 def precheck_show(node):
@@ -640,7 +640,7 @@ def check_redefined(node, kind):
     if kind == 'default':
         scanned = all_default_statements
     elif kind == 'define':
-        scanned = all_define_statments
+        scanned = all_define_statements
 
         if not (node.operator == "=" and node.index is None):
             return
@@ -946,14 +946,14 @@ def check_unreachables(all_nodes):
 
     for node in all_nodes:
         if isinstance(node, Label):
-            # All labels are reachable because arbitary expression can
+            # All labels are reachable because arbitrary expression can
             # renpy.call or renpy.jump to them.
             to_check.append(node)
 
         elif isinstance(node, (Init, TranslateBlock)):
             # Init and TranslateBlock nodes are ment to be unreachable from
             # runtime code, but the block of these ones is always reachable,
-            # either by simply running the game, or changing the langauge.
+            # either by simply running the game, or changing the language.
             if node.block:
                 to_check.append(node.block[0])
 

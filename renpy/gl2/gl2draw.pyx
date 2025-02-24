@@ -48,7 +48,7 @@ import random
 import renpy.uguu.gl as uguugl
 
 cimport renpy.display.render as render
-from renpy.display.render cimport Render
+from renpy.display.render cimport Render, MATRIX_PROJECTION, MATRIX_VIEW, MATRIX_MODEL
 from renpy.display.matrix cimport Matrix
 
 cimport renpy.gl2.gl2texture as gl2texture
@@ -136,6 +136,9 @@ cdef class GL2Draw:
 
         # The old value of fullscreen.
         self.old_fullscreen = False
+
+        # Should mipmaps be generated when mipmap == "auto"?
+        self.auto_mipmap = False
 
     def get_texture_size(self):
         """
@@ -610,6 +613,8 @@ cdef class GL2Draw:
         self.shader_cache.load()
         self.init_fbo()
         self.texture_loader.init()
+
+        self.auto_mipmap = self.draw_per_virt < 0.75
 
     def resize(self):
         """
@@ -1338,7 +1343,7 @@ cdef class GL2DrawingContext:
 
         return rv
 
-    cdef Matrix correct_pixel_perfect(self, Matrix transform):
+    cdef Matrix correct_pixel_perfect(self, Matrix projectionview, Matrix model_matrix):
         """
         Corrects `transform` so that the (0, 0) pixel is aligned with a
         drawable pixel.
@@ -1346,10 +1351,10 @@ cdef class GL2DrawingContext:
 
         cdef float halfwidth
         cdef float halfheight
+        cdef Matrix transform = projectionview * model_matrix
 
-        # This is the equivalent of projecting (0, 0, 0, 1), and getting x and y.
-        cdef float sx = transform.xdw
-        cdef float sy = transform.ydw
+        cdef float sx
+        cdef float sy
 
         halfwidth = self.width / 2.0
         halfheight = self.height / 2.0
@@ -1365,9 +1370,9 @@ cdef class GL2DrawingContext:
         cdef float xoff = round(sx) - sx
         cdef float yoff = round(sy) - sy
 
-        return Matrix.coffset(xoff / halfwidth, yoff / halfheight, 0) * transform
+        return Matrix.coffset(xoff / halfwidth, yoff / halfheight, 0)
 
-    def draw_model(self, model, Matrix transform, Polygon clip_polygon, tuple shaders, dict uniforms, dict properties):
+    def draw_model(self, model, Matrix model_matrix, Polygon clip_polygon, tuple shaders, dict uniforms, dict properties):
 
         cdef Mesh mesh = model.mesh
 
@@ -1375,7 +1380,7 @@ cdef class GL2DrawingContext:
             properties = self.merge_properties(properties, model.properties)
 
         if model.reverse is not IDENTITY:
-             transform = transform * model.reverse
+             model_matrix = model_matrix * model.reverse
 
         # If a clip polygon is in place, clip the mesh with it.
         if clip_polygon is not None:
@@ -1390,14 +1395,15 @@ cdef class GL2DrawingContext:
 
         if self.debug:
             import renpy.gl2.gl2debug as gl2debug
-            gl2debug.geometry(mesh, transform, self.width, self.height)
+            gl2debug.geometry(mesh, model_matrix, self.width, self.height)
 
         program = self.gl2draw.shader_cache.get(shaders)
 
         program.start(properties)
 
         program.set_uniform("u_model_size", (model.width, model.height))
-        program.set_uniform("u_transform", transform)
+        program.set_uniform("u_model", model_matrix)
+        program.set_uniform("u_transform", uniforms["u_projectionview"] * model_matrix)
 
         model.program_uniforms(program)
 
@@ -1407,7 +1413,7 @@ cdef class GL2DrawingContext:
         program.draw(mesh)
         program.finish()
 
-    def draw_one(self, what, Matrix transform, Polygon clip_polygon, tuple shaders, dict uniforms, dict properties):
+    def draw_one(self, what, Matrix model_matrix, Polygon clip_polygon, tuple shaders, dict uniforms, dict properties):
         """
         This is responsible for walking the surface tree, and drawing any
         GL2Models, Renders, and Surfaces it encounters.
@@ -1429,7 +1435,7 @@ cdef class GL2DrawingContext:
             and passed to the shader.
         """
 
-        cdef Matrix child_transform
+        cdef Matrix child_model_matrix
         cdef Polygon child_clip_polygon
         cdef Polygon new_clip_polygon
 
@@ -1437,7 +1443,7 @@ cdef class GL2DrawingContext:
             what = self.gl2draw.load_texture(what)
 
         if isinstance(what, GL2Model):
-            self.draw_model(what, transform, clip_polygon, shaders, uniforms, properties)
+            self.draw_model(what, model_matrix, clip_polygon, shaders, uniforms, properties)
             return
 
         cdef Render r
@@ -1445,7 +1451,7 @@ cdef class GL2DrawingContext:
 
         if r.text_input:
 
-            tovirt = Matrix.cscreen_projection(self.gl2draw.virtual_size[0], self.gl2draw.virtual_size[1]).inverse() * transform
+            tovirt = Matrix.cscreen_projection(self.gl2draw.virtual_size[0], self.gl2draw.virtual_size[1]).inverse() * model_matrix
 
             x0, y0 = tovirt.transform(0, 0)
             x1, y1 = tovirt.transform(r.width, r.height)
@@ -1471,7 +1477,11 @@ cdef class GL2DrawingContext:
         has_reverse = (r.reverse is not None) and (r.reverse is not IDENTITY)
 
         if r.properties and r.properties.get("pixel_perfect", False) and properties["pixel_perfect"] is None:
-            transform = self.correct_pixel_perfect(transform)
+            uniforms = dict(uniforms)
+
+            offset_matrix  = self.correct_pixel_perfect(uniforms["u_projectionview"], model_matrix)
+            uniforms["u_view"] = offset_matrix * uniforms["u_view"]
+            uniforms["u_projectionview"] = offset_matrix * uniforms["u_projectionview"]
 
         if has_reverse or r.properties:
             properties = self.merge_properties(properties, r.properties)
@@ -1507,27 +1517,41 @@ cdef class GL2DrawingContext:
 
         for child, cx, cy, focus, main in children:
 
-            child_transform = transform
+            child_model_matrix = model_matrix
             child_clip_polygon = clip_polygon
             child_properties = properties
+            child_uniforms = uniforms
 
             if (cx or cy):
                 if isinstance(cx, float) and not properties["pixel_perfect"]:
                     child_properties = dict(properties)
                     child_properties["pixel_perfect"] = False
 
-                child_transform = child_transform * Matrix.coffset(cx, cy, 0)
+                child_model_matrix = child_model_matrix * Matrix.coffset(cx, cy, 0)
 
                 if child_clip_polygon is not None:
                     child_clip_polygon = child_clip_polygon.multiply_matrix(Matrix.coffset(-cx, -cy, 0))
 
             if has_reverse:
-                child_transform = child_transform * r.reverse
+                child_model_matrix = child_model_matrix * r.reverse
+
+                if r.matrix_kind == MATRIX_PROJECTION:
+                    child_uniforms = dict(child_uniforms)
+                    child_uniforms["u_projection"] = child_uniforms["u_projectionview"] = child_uniforms["u_projectionview"] * child_model_matrix
+                    child_uniforms["u_view"] = IDENTITY
+                    child_model_matrix = IDENTITY
+
+                elif r.matrix_kind == MATRIX_VIEW:
+                    child_uniforms = dict(child_uniforms)
+                    child_uniforms["u_view"] = child_uniforms["u_view"] * child_model_matrix
+                    child_uniforms["u_projectionview"] = child_uniforms["u_projection"] * child_uniforms["u_view"]
+                    child_model_matrix = IDENTITY
 
                 if child_clip_polygon is not None:
                     child_clip_polygon = child_clip_polygon.multiply_matrix(r.forward)
 
-            self.draw_one(child, child_transform, child_clip_polygon, shaders, uniforms, child_properties)
+
+            self.draw_one(child, child_model_matrix, child_clip_polygon, shaders, child_uniforms, child_properties)
 
 
         if depth:
@@ -1537,20 +1561,19 @@ cdef class GL2DrawingContext:
 
 
     def draw(self, what, Matrix transform):
-
         clip_polygon = None
         shaders = ()
-        uniforms = {}
+        uniforms = { "u_projection": transform, "u_view": IDENTITY, "u_projectionview": transform }
         properties = { "pixel_perfect" : None }
 
         if renpy.config.nearest_neighbor:
             properties["texture_scaling"] = "nearest"
 
-        self.draw_one(what, transform, clip_polygon, shaders, uniforms, properties)
+        self.draw_one(what, IDENTITY, clip_polygon, shaders, uniforms, properties)
 
 
 # A set of uniforms that are defined by Ren'Py, and shouldn't be set in ATL.
-standard_uniforms = { "u_transform", "u_time", "u_random", "u_drawable_size" }
+standard_uniforms = { "u_transform", "u_projection", "u_view", "u_projectionview", "u_model", "u_time", "u_random", "u_drawable_size" }
 
 _types = """
 standard_uniforms : set[str]

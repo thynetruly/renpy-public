@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright 2004-2024 Tom Rothamel <pytom@bishoujo.us>
+# Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation files
@@ -132,7 +132,7 @@ def main():
     if cubism:
         cython("renpy.gl2.live2dmodel")
 
-    cython("renpy.gl2.assimp", language="c++")
+    cython("renpy.gl2.assimp", [ "src/assimpio.cc" ], language="c++")
 
     # renpy.text
     cython("renpy.text.textsupport")

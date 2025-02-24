@@ -509,7 +509,6 @@ def mark_sweep():
         worklist.append(screen_render)
 
     worklist.extend(renpy.display.im.cache.get_renders())
-    worklist.extend(renpy.gl2.assimp.get_renders())
 
     for r in worklist:
         r.mark = True
@@ -541,12 +540,18 @@ def mark_sweep():
     live_renders = worklist
 
 
-# Possible operations that can be done as part of a render.
+# Possible operations that can be done as part of a render. Not used anymore, but kept
+# for compatibility.
 BLIT = 0
 DISSOLVE = 1
 IMAGEDISSOLVE = 2
 PIXELLATE = 3
 FLATTEN = 4
+
+# Possible matrix kinds.
+MATRIX_VIEW = 0
+MATRIX_MODEL = 1
+MATRIX_PROJECTION = 2
 
 cdef class Render:
 
@@ -588,6 +593,9 @@ cdef class Render:
         # be of the (0, 0) point in the child coordinate space.
         self.forward = None
         self.reverse = None
+
+        # The kind of matrix that is being updated by this displayable.
+        self.matrix_kind = MATRIX_MODEL
 
         # This is used to adjust the alpha of children of this render.
         self.alpha = 1

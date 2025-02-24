@@ -949,7 +949,7 @@ repeat_transform_events = [ "show", "replace", "update" ]
 # How many statements should we warp through?
 warp_limit = 1000
 
-# Should dissolve statments force the use of alpha.
+# Should dissolve statements force the use of alpha.
 dissolve_force_alpha = True
 
 # A map from a displayable prefix to a function that returns a displayable
@@ -1133,6 +1133,9 @@ controller_blocklist = [
     "030000006d0400000000", # Razer Xbox 360 Controller (#4622)
 ]
 
+# Should other textures be mipmapped by default?
+mipmap = "auto"
+
 # Should dissolve transitions be mipmapped by default?
 mipmap_dissolves = False
 
@@ -1307,7 +1310,7 @@ viewport_drag_radius = 10
 # function is run.
 scene_callbacks = [ ]
 
-# The physical width and heigh of the game window. If None, the window defaults
+# The physical width and height of the game window. If None, the window defaults
 # to config.screen_width and config.screen_height.
 physical_width = None
 physical_height = None

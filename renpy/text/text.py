@@ -1023,7 +1023,10 @@ class Layout(object):
 
             self.textures[key] = tex
 
-            if self.textshaders:
+        if self.textshaders:
+            for o, color, xo, yo in self.outlines:
+                tex = self.textures[(o, color)]
+
                 for ts in self.textshaders:
                     mr = self.create_mesh_displayable(o, tex, lines, xo, yo, depth, max_depth, ts)
                     self.mesh_displayables.append((o, xo, yo, mr))
@@ -1780,7 +1783,7 @@ class Layout(object):
             if line is not last_line:
                 bottom = min(outline + line.y + line.height + self.line_overlap_split, th)
             else:
-                bottom = min(2 * outline + line.y + line.height, th)
+                bottom = th
 
             if line.glyphs:
                 first_glyph = line.glyphs[0]
@@ -1792,7 +1795,7 @@ class Layout(object):
             left = 0
 
             if first_glyph:
-                right = first_glyph.x + self.add_left
+                right = max(first_glyph.x - self.add_left, 0)
             else:
                 right = tw
 
@@ -1800,21 +1803,20 @@ class Layout(object):
             # These pseudo-glyphs are used to make sure that outlines of lines above and below
             # are displayed.
 
-            if outline:
-                if right > 0 and (ts == first_shader):
+            if right > 0 and (ts == first_shader):
 
-                    cx = 0 + right / 2
-                    cy = outline + line.baseline
+                cx = 0 + right / 2
+                cy = outline + line.baseline
 
-                    mesh.add_glyph(
-                        tw, th,
-                        cx, cy,
-                        last_index,
-                        left, top, right, bottom,
-                        last_time, last_time,
-                        line.baseline, line.height - line.baseline,
-                        self.add_left, self.add_top,
-                    )
+                mesh.add_glyph(
+                    tw, th,
+                    cx, cy,
+                    last_index,
+                    left, top, right, bottom,
+                    last_time, last_time,
+                    line.baseline, line.height - line.baseline,
+                    self.add_left, self.add_top,
+                )
 
             # Generate the actual glyphs.
 
@@ -1871,25 +1873,23 @@ class Layout(object):
                 last_index = g.index
 
             # Handle the empty space to the right of the last glyph.
-            if outline:
+            if right < tw and (ts == first_shader):
 
-                if right < tw and (ts == first_shader):
+                left = right
+                right = tw
 
-                    left = right
-                    right = tw
+                cx = left + right / 2
+                cy = outline + line.baseline
 
-                    cx = left + right / 2
-                    cy = outline + line.baseline
-
-                    mesh.add_glyph(
-                        tw, th,
-                        cx, cy,
-                        last_index,
-                        left, top, right, bottom,
-                        last_time, last_time,
-                        line.baseline, line.height - line.baseline,
-                        self.add_left, self.add_top,
-                    )
+                mesh.add_glyph(
+                    tw, th,
+                    cx, cy,
+                    last_index,
+                    left, top, right, bottom,
+                    last_time, last_time,
+                    line.baseline, line.height - line.baseline,
+                    self.add_left, self.add_top,
+                )
 
             top = bottom
 

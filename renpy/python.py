@@ -424,31 +424,6 @@ class StarredVariables(ast.NodeVisitor):
 # starred assignment.
 find_starred_variables = StarredVariables().find
 
-class WrapFormattedValue(ast.NodeTransformer):
-    """
-    This walks through the children of a FormattedValue, to look for
-    nodes with the __name syntax, and format those nodes.
-    """
-
-    def visit_Name(self, node):
-
-        name = node.id
-
-        if not name.startswith("__"):
-            return node
-
-        name = name[2:]
-
-        if (not name) or ("__" in name):
-            return node
-
-        prefix = renpy.lexer.munge_filename(compile_filename)
-
-        name = prefix + name
-
-        return ast.Name(id=name, ctx=node.ctx, lineno=node.lineno, col_offset=node.col_offset, end_lineno=node.end_lineno, end_col_offset=node.end_col_offset)
-
-wrap_formatted_value = WrapFormattedValue().visit
 
 
 class FindStarredMatchPatterns(ast.NodeVisitor):
@@ -767,10 +742,6 @@ class WrapNode(ast.NodeTransformer):
             args=[self.generic_visit(node)],  # type: ignore
             keywords=[])
 
-    def visit_FormattedValue(self, node):
-        node = wrap_formatted_value(node)
-        return self.generic_visit(node)
-
     def visit_Match(self, node: ast.Match):
         node = self.generic_visit(node)   # type: ignore
         node.cases = [self.wrap_match_case(i) for i in node.cases]
@@ -883,33 +854,79 @@ py_compile_cache = { }
 # An old version of the same, that's preserved across reloads.
 old_py_compile_cache = { }
 
+LocatableNode = ast.stmt|ast.expr
 
-def fix_locations(node, lineno, col_offset):
+class LocationFixer:
     """
-    Assigns locations to the given node, and all of its children, adding
-    any missing line numbers and column offsets.
+    This class is responsible for fixing the locations of nodes in the AST. First,
+    it will adjust the line numbers and column offsets, and then it will use this
+    information to fill in missing attributes.
+
+    `line_delta`
+        The number of lines to add to the line numbers of the nodes.
+
+    `first_line_col_delta`
+        The number of columns to add to the column offsets of the first line.
+
+    `rest_line_col_delta`
+        The number of columns to add to the column offsets of the rest of the lines.
     """
 
-    start = max(
-        (lineno, col_offset),
-        (getattr(node, "lineno", None) or 1, getattr(node, "col_offset", None) or 0)
-    )
+    line_delta: int
+    first_line_col_delta: int
+    rest_line_col_delta: int
 
-    lineno, col_offset = start
+    def __init__(self, node: ast.stmt|ast.expr, line_delta: int=0, first_line_col_delta: int=0, rest_line_col_delta: int=0):
+        self.line_delta = line_delta
+        self.first_line_col_delta = first_line_col_delta
+        self.rest_line_col_delta = rest_line_col_delta
 
-    node.lineno = lineno
-    node.col_offset = col_offset
+        self.fix(node, 1 + line_delta, first_line_col_delta)
 
-    ends = [ start, (getattr(node, "end_lineno", None) or 1, getattr(node, "end_col_offset", None) or 0) ]
+    def fix(self, node: ast.stmt|ast.expr, lineno=1, col_offset=0):
 
-    for child in ast.iter_child_nodes(node):
-        fix_locations(child, lineno, col_offset)
-        ends.append((child.end_lineno, child.end_col_offset))
+        # This finds missing attributes by triggering AttributeErrors if an attribute is missing.
+        try:
+            if node.lineno == 1:
+                node.col_offset += self.first_line_col_delta
+            else:
+                node.col_offset += self.rest_line_col_delta
 
-    end = max(ends)
+            node.lineno += self.line_delta
 
-    node.end_lineno = end[0]
-    node.end_col_offset = end[1]
+        except (AttributeError, TypeError):
+            node.lineno = 1 + self.line_delta
+            node.col_offset = self.first_line_col_delta
+
+        try:
+
+            if node.end_lineno == 1:
+                node.end_col_offset += self.first_line_col_delta
+            else:
+                node.end_col_offset += self.rest_line_col_delta
+
+            node.end_lineno += self.line_delta
+
+        except (AttributeError, TypeError):
+            node.end_lineno = node.lineno
+            node.end_col_offset = node.col_offset
+
+        start = max(
+            (lineno, col_offset),
+            (node.lineno, node.col_offset)
+        )
+
+        lineno, col_offset = start
+        node.lineno = lineno
+        node.col_offset = col_offset
+
+        ends = [ start, (node.end_lineno, node.end_col_offset) ]
+
+        for child in ast.iter_child_nodes(node):
+            self.fix(child, lineno, col_offset)
+            ends.append((child.end_lineno, child.end_col_offset))
+
+        node.end_lineno, node.end_col_offset = max(ends)
 
 
 def quote_eval(s):
@@ -1001,11 +1018,8 @@ def quote_eval(s):
     return "".join(rv[:-2])
 
 
-# The filename being compiled.
-compile_filename = ""
 
-
-def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=True, py=None, hashcode=None):
+def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=True, py=None, hashcode=None, column=0):
     """
     Compiles the given source code using the supplied codegenerator.
     Lists, List Comprehensions, and Dictionaries are wrapped when
@@ -1029,10 +1043,14 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
     `ast_node`
         Rather than returning compiled bytecode, returns the AST object
         that would be used.
-    """
 
-    global compile_filename
+    `column`
+        A column offset to add to the column numbers of the source.
+    """
     global compile_warnings
+
+    first_line_column_delta = column
+    rest_line_column_delta = column
 
     if ast_node:
         cache = False
@@ -1045,6 +1063,9 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
         lineno = source.linenumber
         hashcode = source.hashcode
 
+        first_line_column_delta = source.column
+        rest_line_column_delta = 0
+
         if py is None:
             py = source.py
 
@@ -1054,11 +1075,19 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
     if py is None:
         py = 3
 
+    # This determines if the lines are indented. If so, we adjust the
+    # ast to match.
+    indented = source and (source[0] == " ") and (mode != "eval")
+
+    if indented:
+        lineno -= 1
+        source = "if True:\n" + source
+
     flags = file_compiler_flags.get(filename, 0)
 
     if cache:
 
-        key = (hashcode, lineno, filename, mode, renpy.script.MAGIC, flags)
+        key = (hashcode, lineno, filename, mode, renpy.script.MAGIC, flags, column)
         warnings_key = ("warnings", key)
 
         rv = py_compile_cache.get(key, None)
@@ -1072,6 +1101,7 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
             return rv
 
         bytecode = renpy.game.script.bytecode_oldcache.get(key, None)
+
         if bytecode is not None:
 
             try:
@@ -1099,7 +1129,6 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
         source = quote_eval(source)
 
     line_offset = lineno - 1
-    compile_filename = filename
 
     try:
 
@@ -1108,44 +1137,65 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
         else:
             py_mode = mode
 
-        flags |= new_compile_flags
-
-        try:
-            with save_warnings():
-                tree = compile(source, filename, py_mode, ast.PyCF_ONLY_AST | flags, 1)
-        except SyntaxError as orig_e:
-
+        tree: Any = None
+        with save_warnings():
             try:
-                fixed_source = renpy.compat.fixes.fix_tokens(source)
-                with save_warnings():
-                    tree = compile(fixed_source, filename, py_mode, ast.PyCF_ONLY_AST | flags, 1)
-            except Exception:
-                raise orig_e
+                tree = compile(
+                    source,
+                    filename,
+                    py_mode,
+                    ast.PyCF_ONLY_AST | flags,
+                    True)
+
+            except SyntaxError:
+                handled = False
+                try:
+                    fixed_source = renpy.compat.fixes.fix_tokens(source)
+                    tree = compile(
+                        fixed_source,
+                        filename,
+                        py_mode,
+                        ast.PyCF_ONLY_AST | flags,
+                        True)
+                    handled = True
+                except Exception:
+                    pass
+
+                if not handled:
+                    raise
+
+        # If the body is indented, it's wrapped in an "if True:" statement, which needs to be eliminated.
+        if indented:
+            tree.body = tree.body[0].body
 
         tree = wrap_node.visit(tree)
 
         if mode == "hide":
             wrap_hide(tree)
 
-        fix_locations(tree, 1, 0)
-        ast.increment_lineno(tree, lineno - 1)
+        LocationFixer(tree, lineno - 1, first_line_column_delta, rest_line_column_delta)
 
         line_offset = 0
 
         if ast_node:
             return tree.body
 
-        try:
-            with save_warnings():
-                rv = compile(tree, filename, py_mode, flags, 1)
-        except SyntaxError as orig_e:
+        rv: Any = None
+        with save_warnings():
             try:
-                tree = renpy.compat.fixes.fix_ast(tree)
-                fix_locations(tree, 1, 0)
-                with save_warnings():
-                    rv = compile(tree, filename, py_mode, flags, 1)
-            except Exception:
-                raise orig_e
+                rv = compile(tree, filename, py_mode, flags, True)
+            except SyntaxError:
+                handled = False
+                try:
+                    tree = renpy.compat.fixes.fix_ast(tree)
+                    LocationFixer(tree, 0, 0, 0)
+                    rv = compile(tree, filename, py_mode, flags, True)
+                    handled = True
+                except Exception:
+                    pass
+
+                if not handled:
+                    raise
 
         if cache:
             py_compile_cache[key] = rv

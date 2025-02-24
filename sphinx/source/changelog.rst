@@ -15,7 +15,7 @@ Requirement and Dependency Changes
 
 Ren'Py now requires Windows 10 or later to run. This means that it will no longer run on Windows 7, 8, or 8.1.
 
-Ren'Py now targets Ubuntu 20.04. This also means it targers the "soldier" version of the Steam Linux Runtime.
+Ren'Py now targets Ubuntu 20.04. This also means it targets the "soldier" version of the Steam Linux Runtime.
 
 Ren'Py is no longer built for 32-bit ARM Linux. This drops support for the Raspberry Pi 3, and very old Chromebooks.
 Ren'Py is still being built for 32-bit ARM Android. Ren'Py will now prefer the gles2 renderer on ARM Linux devices,
@@ -46,6 +46,21 @@ The goal of this change is to make it easier to distribute third-party libraries
 merged with the player's script, a library can be placed under game/libs, and will provide full functionality there.
 
 `.rpe` and `.rpe.py` files are also searched in the libs directory.
+
+Optional Mipmaps
+----------------
+
+Mipmaps are smaller versions of an image that are used when Ren'Py scales an image down. Using mipmaps
+prevents the image from becoming jagged when scaled down, but generating mipmaps takes time and can cause the game
+to use more memory.
+
+Ren'Py now leaves the decision of if to create mipmaps to the developer, who knows if the game will scale down an
+image. To always enable mipmaps, set :var:`config.mipmap` to True. If this isn't set to true, Ren'Py will only
+create mipmaps if the display is scaled down to less than 75% of the virtual window size.
+
+Mipmaps will automatically be created for images loaded for the purpose of Live2D or AssimpModel, as these are
+likely to be scaled down.  Mipmaps can be created for specific images by providing True to the mipmap parameter
+of :func:`Image`.
 
 Features
 --------
@@ -84,14 +99,19 @@ apply :ref:`text interpolation <text-interpolation>` to the result. Interpolatio
 that the function is called from. The triple underscore function also marks the string contained
 inside for translation.
 
+
 Other Changes
 -------------
+
+By default, Ren'Py now only creates mipmaps for textures if the display is scaled down to less than .75 of virtual
+window size. This is suitable for games that do not scale down images. To enable mipmapping again, set
+:var:`config.mipmap` to True.
 
 Ren'Py no longer triggers and autoreload when a file that had not existed comes into existence. This behavior
 had been inconsistent, working in some places but not others, required Ren'Py to spent time scanning for files
 that do not exist.
 
-Ren'Py now considers a dialogue statment to have been seen if a statement with the same translation identifier
+Ren'Py now considers a dialogue statement to have been seen if a statement with the same translation identifier
 has been seen.
 
 For size reasons, the lists of seen dialogue and translations now store a 64-bit integer hash of the statement
@@ -114,6 +134,18 @@ Ren'Py now also searches for `.rpe` and `.rpe.py` files in the new libs director
 
 .. _renpy-8.3.4:
 .. _renpy-7.8.4:
+
+8.3.5 / 7.8.5
+==============
+
+Changes
+-------
+
+Ren'Py will now create pseudo-glyphs for the all textshaders, not just textshaders applied to text with outlines.
+
+
+.. _renpy-8.3.5:
+.. _renpy-7.8.5:
 
 8.3.4 / 7.8.4
 =============
@@ -601,7 +633,7 @@ The interaction of ``window auto`` and ``nvl`` mode, especially
 :var:`config.nvl_adv_transition` and :var:`config.adl_nvl_transition`,
 has been improved. The major change is that the latter transitions will
 now only occur if the window has not been shown or hidden, preventing
-double interactions from occuring.
+double interactions from occurring.
 
 The (rarely used) ``nvl hide`` and ``nvl show`` statements now set the
 flag used by ``window auto``, preventing the window from being shown
@@ -1654,7 +1686,7 @@ if the fade time was too short.
 The :var:`config.fadeout_audio` variable (renamed from config.fade_music) controls
 the default fadeout used when stopping audio, or changing audio using ``play``. (It
 is not used by ``queue``). The default value is now 0.016 seconds, which eliminates
-popping sounds that occured when audio was stopped abruptly.
+popping sounds that occurred when audio was stopped abruptly.
 
 Audio panning (:func:`renpy.music.set_pan`) is now constant-power, so that
 panning audio should not change the volume.
@@ -4020,7 +4052,7 @@ work on both Python 2 and Python 3.
 
 First, Ren'Py now uses `future <https://python-future.org/>`_ to provide
 standard library compatibility. It's now possible to import modules using
-their Python 3 names, when a renaming has occured.
+their Python 3 names, when a renaming has occurred.
 
 When a .rpy file begins with the new ``rpy python 3`` statement, the file is
 compiled in a Python 3 compatibility mode. The two changes this causes are:
