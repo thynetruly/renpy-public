@@ -20,7 +20,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-from typing import Callable, NamedTuple
+from typing import TYPE_CHECKING, Callable, NamedTuple
 
 import io
 import re
@@ -28,10 +28,15 @@ import sys
 import os
 import contextlib
 import functools
+import linecache
 
 import renpy
 
-from renpy.lexersupport import match_logical_word
+if TYPE_CHECKING:
+    def match_logical_word(data: str, pos: int) -> tuple[str, bool, int]: ...
+else:
+    from renpy.lexersupport import match_logical_word  # type: ignore
+
 from renpy.astsupport import make_pyexpr
 
 
@@ -92,8 +97,8 @@ class ParseError(SyntaxError):
                     offset -= left_spaces
                     end_offset -= left_spaces
 
-                    if offset >= 1:
-                        caret_space = ' ' * (offset - 1)
+                    if offset >= 0:
+                        caret_space = ' ' * offset
                         carets = '^' * (end_offset - offset)
                         message += f"\n    {caret_space}{carets}"
 
@@ -248,6 +253,13 @@ def get_string_munger(prefix: str) -> Callable[[str], str]:
 # The filename that the start and end positions are relative to.
 original_filename = ""
 
+# Matches one operator that contains special characters.
+_ANY_OPERATOR_REGEX = re.compile("|".join(re.escape(i) for i in (
+    '//=', '>>=', '<<=', '**=', '+=', '-=', '*=', '/=', '%=', '@=', '&=', '|=', '^=',
+    '//', '>>', '<<', '**', '+', '-', '*', '/', '%', '@', '&', '|', '^',
+    ':=', '<=', '>=', '==', '->', '!=',
+    ',', ':', '!', '.', ';', '=', '~', '<', '>', '$', '?')))
+
 
 def list_logical_lines(
     filename: str,
@@ -268,11 +280,16 @@ def list_logical_lines(
 
     original_filename = filename
 
+    filename = elide_filename(filename)
+    prefix = munge_filename(filename)
+
+    munge_string = get_string_munger(prefix)
+
     # Convert windows and mac newlines to \n, so we don't have to worry about it.
     if filedata:
         data_io = io.StringIO(filedata, None)
     else:
-        data_io = open(filename, "r")
+        data_io = open(original_filename, "r", encoding="utf-8")
 
     with data_io:
         data = data_io.read()
@@ -280,177 +297,140 @@ def list_logical_lines(
     if filename.endswith("_ren.py"):
         data = ren_py_to_rpy(data, filename)
 
-    filename = elide_filename(filename)
-    prefix = munge_filename(filename)
-
-    munge_string = get_string_munger(prefix)
-
-    # Add some newlines, to fix lousy editors.
+    # Add couple empty lines, so we can safely check for pos + 2 for triple-string.
     data += "\n\n"
-
-    # The result.
-    rv = []
-
-    # The line number in the physical file.
-    number = linenumber
 
     # The current position we're looking at in the buffer.
     pos = 0
 
-    # Are we looking at a triple-quoted string?
-
     # Skip the BOM, if any.
-    if len(data) and data[0] == u'\ufeff':
+    if data[0] == '\ufeff':
         pos += 1
 
-    if add_lines or renpy.game.context().init_phase:
-        lines = renpy.scriptedit.lines
-    else:
-        lines = { }
+    # Result tuples of (string, start line number, start pos, end pos).
+    rv: list[tuple[str, int, int, int]] = []
+
+    # The line number in the physical file.
+    number = linenumber
 
     len_data = len(data)
 
-    renpy.scriptedit.files.add(filename)
-
-    line = 0
+    # The line number of the start of this logical line.
     start_number = 0
 
-    # Looping over the lines in the file.
-    while pos < len_data:
+    # The line that we're building up.
+    line: list[str] = []
 
-        # The line number of the start of this logical line.
+    # Stack of open paren (char, line number, column) tuples.
+    open_parens: list[tuple[str, int, int]] = []
+
+    # Position at the beginning of current physical line.
+    # This is used to calculate column offset by pos - line_start_pos.
+    line_startpos = pos
+
+    # The starting position of the current logical line.
+    startpos = pos
+
+    # The ending position of the current logical line without comment and whitespace/newline
+    # or None if the same as pos.
+    endpos = None
+
+    # Matches any amount of blank lines, comment-only lines, and backslash-newlines.
+    ignore_regex = re.compile(r"""(?:\ *\n|\ *\#[^\n]*\n|\ *\\\n)*""")
+
+    operator_regex = _ANY_OPERATOR_REGEX
+
+    # Looping over whole file to find logical lines.
+    while match := ignore_regex.match(data, pos):
+        pos = match.end()
+
+        if pos >= len_data:
+            break
+
+        number += match[0].count("\n")
+
         start_number = number
-
-        # The line that we're building up.
-        line = [ ]
-
-        # The number of open parenthesis there are right now.
-        parendepth = 0
-
-        loc = (filename, start_number)
-        lines[loc] = renpy.scriptedit.Line(original_filename, start_number, pos)
-
+        line_startpos = pos
+        startpos = pos
         endpos = None
+        line.clear()
 
-        while pos < len_data:
+        # Looping over parts of single logical line.
+        while True:
+            try:
+                c = data[pos]
+            except IndexError:
+                # This can happen only if we have unclosed parens.
+                c, lineno, column = open_parens[-1]
+                raise ParseError(f"'{c}' was never closed",
+                                 filename, lineno, column,
+                                 linecache.getline(filename, lineno))
 
-            startpos = pos
-            c = data[pos]
+            # Name and runs of spaces are the most common cases, so it's first.
+            if c in ' _' or c.isalnum():
+                word, magic, end = match_logical_word(data, pos)
 
-            if c == u'\t':
-                raise ParseError("Tab characters are not allowed in Ren'Py scripts.",
-                                 filename, number)
+                if magic and word[2] != "_":
+                    rest = word[2:]
 
-            if c == u'\n' and not parendepth:
+                    if "__" not in rest:
+                        word = prefix + rest
 
-                line = ''.join(line)
-
-                # If not blank...
-                if not re.match(r"^\s*$", line):
-
-                    # Add to the results.
-                    rv.append((filename, start_number, line))
-
-                if endpos is None:
-                    endpos = pos
-
-                lines[loc].end_delim = endpos + 1
-
-                while data[endpos - 1] == u' ':
-                    endpos -= 1
-
-                lines[loc].end = endpos
-                lines[loc].text = data[lines[loc].start:lines[loc].end]
-                lines[loc].full_text = data[lines[loc].start:lines[loc].end_delim]
-
-                pos += 1
-                number += 1
-                endpos = None
-                # This helps out error checking.
-                line = [ ]
-                break
-
-            if c == u'\n':
-                number += 1
-                endpos = None
-
-            # Backslash/newline.
-            if c == u"\\" and data[pos + 1] == u"\n":
-                pos += 2
-                number += 1
-                line.append(u"\\\n")
+                line.append(word)
+                pos = end
                 continue
 
-            # Parenthesis.
-            if c in u'([{':
-                parendepth += 1
+            # Strings are second common case.
+            if c in '"\'`':
+                string_startpos = pos
 
-            if (c in u'}])') and parendepth:
-                parendepth -= 1
+                # Compute quote size.
+                if data[pos + 1] == c:
+                    if data[pos + 2] == c:
+                        pos += 3
+                        quote_size = 3
+                    else:
+                        # Empty string.
+                        pos += 2
+                        line.append(f"{c}{c}")
+                        continue
+                else:
+                    pos += 1
+                    quote_size = 1
 
-            # Comments.
-            if c == u'#':
-                endpos = pos
+                quote = c
 
-                while data[pos] != u'\n':
+                end_quote_size = 0
+                c = data[pos]
+                while end_quote_size != quote_size:
+                    # Skip escaped char.
+                    while c == '\\':
+                        end_quote_size = 0
+                        pos += 2
+                        c = data[pos]
+
                     pos += 1
 
-                continue
-
-            # Strings.
-            if c in u'"\'`':
-                delim = c
-                line.append(c)
-                pos += 1
-
-                escape = False
-                triplequote = False
-
-                if (pos < len_data - 1) and (data[pos] == delim) and (data[pos + 1] == delim):
-                    line.append(delim)
-                    line.append(delim)
-                    pos += 2
-                    triplequote = True
-
-                s = [ ]
-
-                while pos < len_data:
-
-                    c = data[pos]
-
-                    if c == u'\n':
+                    if c == "\n":
+                        end_quote_size = 0
+                        line_startpos = pos
                         number += 1
 
-                    if escape:
-                        escape = False
-                        pos += 1
-                        s.append(c)
-                        continue
+                    elif c == quote:
+                        end_quote_size += 1
+                    else:
+                        end_quote_size = 0
 
-                    if c == delim:
+                    # TODO: disallow same quote nested f-strings.
 
-                        if not triplequote:
-                            pos += 1
-                            s.append(c)
-                            break
+                    try:
+                        c = data[pos]
+                    except IndexError:
+                        raise ParseError("unterminated string literal",
+                                         filename, start_number,
+                                         text=linecache.getline(filename, start_number))
 
-                        if (pos < len_data - 2) and (data[pos + 1] == delim) and (data[pos + 2] == delim):
-                            pos += 3
-                            s.append(delim)
-                            s.append(delim)
-                            s.append(delim)
-                            break
-
-                    if c == u'\\':
-                        escape = True
-
-                    s.append(c)
-                    pos += 1
-
-                    continue
-
-                s = "".join(s)
-
+                s = data[string_startpos:pos]
                 if "__" in s:
                     s = munge_string(s)
 
@@ -458,52 +438,102 @@ def list_logical_lines(
 
                 continue
 
-            word, magic, end = match_logical_word(data, pos)
+            # Opertator.
+            if match := operator_regex.match(data, pos):
+                line.append(match[0])
+                pos = match.end()
+                continue
 
-            if magic and word[2] != "_":
-                rest = word[2:]
+            # Newline.
+            if c == '\n':
+                if open_parens:
+                    line.append('\n')
+                    pos += 1
+                    number += 1
+                    line_startpos = pos
+                    endpos = None
+                    continue
 
-                if "__" not in rest:
-                    word = prefix + rest
+                rv_line = ''.join(line)
 
-            line.append(word)
-            pos = end
+                if not rv_line.strip():
+                    raise Exception(f"{filename}:{start_number}:{startpos} empty line")
 
-            if (pos - startpos) > 65536:
-                err = ParseError(
-                    "Overly long logical line.",
-                    filename, start_number,
-                    text="".join(line))
-                err.add_note("Check strings and parenthesis.")
-                raise err
+                # Add to the results.
+                rv.append((rv_line, start_number, startpos, endpos or pos))
+                break
 
-    if line:
-        err = ParseError("is not terminated with a newline.",
-                         filename, start_number,
-                         text="".join(line))
-        err.add_note("Check strings and parenthesis.")
-        raise err
+            # Parenthesis.
+            if c in '([{':
+                open_parens.append((c, number, pos - line_startpos))
+                line.append(c)
+                pos += 1
+                continue
 
-    return rv
+            elif c in '}])':
+                if not open_parens:
+                    raise ParseError(f"unmatched '{c}'",
+                                     filename, number, pos - line_startpos,
+                                     linecache.getline(filename, number))
 
+                open_c, _, _ = open_parens.pop()
 
-def split_indent(l):
-    """
-    Returns the length of the line's indentation, and the rest of the line.
-    """
+                if not (
+                    c == ")" and open_c == "(" or
+                    c == "]" and open_c == "[" or
+                    c == "}" and open_c == "{"
+                ):
+                    raise ParseError(f"closing parenthesis '{c}' does not match opening parenthesis '{open_c}'",
+                                     filename, number, pos - line_startpos,
+                                     linecache.getline(filename, number))
 
-    depth = 0
-    index = 0
+                line.append(c)
+                pos += 1
+                continue
 
-    while True:
-        if l[index] == ' ':
-            depth += 1
-            index += 1
-            continue
+            # Comments.
+            if c == '#':
+                endpos = pos
 
-        break
+                pos = data.index('\n', pos)
+                continue
 
-    return depth, l[index:]
+            # Backslash/newline.
+            if c == "\\" and data[pos + 1] == "\n":
+                pos += 2
+                number += 1
+                line_startpos = pos
+                line.append("\\\n")
+                continue
+
+            if c == '\t':
+                raise ParseError("Tab characters are not allowed in Ren'Py scripts.",
+                                 filename, number,
+                                 text=linecache.getline(filename, number))
+
+            # Some kind of non alpha-numeric character outside of ASCII range.
+            else:
+                line.append(c)
+                pos += 1
+
+    # Add scriptedit lines if requested.
+    if add_lines:
+        lines = renpy.scriptedit.lines
+        for _, number, start, end in rv:
+            l = renpy.scriptedit.Line(original_filename, number, start)
+
+            l.end_delim = end + 1
+
+            while data[end - 1] == ' ':
+                end -= 1
+
+            l.end = end
+            l.text = data[l.start:l.end]
+            l.full_text = data[l.start:l.end_delim]
+
+            lines[filename, number] = l
+
+    return [(filename, number, line) for line, number, _, _ in rv]
 
 
 class GroupedLine(NamedTuple):
@@ -512,49 +542,10 @@ class GroupedLine(NamedTuple):
     number: int
     indent: int
     text: str
-    block: list
+    block: list["GroupedLine"]
 
 
-def gll_core(lines, i, min_depth):
-    """
-    Recursively groups lines into blocks.
-
-    Given the line
-    """
-
-    rv = []
-    depth = None
-
-    while i < len(lines):
-
-        filename, number, text = lines[i]
-
-        indent, rest = split_indent(text)
-
-        # This catches a block exit.
-        if indent < min_depth:
-            break
-
-        if depth is None:
-            depth = indent
-
-        if depth != indent:
-            raise ParseError(
-                "Indentation mismatch.",
-                filename, number, text=text)
-
-        # Advance to the next line.
-        i += 1
-
-        # Try parsing a block associated with this line.
-        block, i = gll_core(lines, i, depth + 1)
-
-        rv.append(GroupedLine(filename, number, indent, rest, block))
-
-    return rv, i
-
-
-def group_logical_lines(lines):
+def group_logical_lines(lines: list[tuple[str, int, str]]) -> list[GroupedLine]:
     """
     This takes as input the list of logical line triples output from
     list_logical_lines, and breaks the lines into blocks. Each block
@@ -563,16 +554,47 @@ def group_logical_lines(lines):
     no block is associated with this line.)
     """
 
-    if lines:
+    if not lines:
+        return []
 
-        filename, number, text = lines[0]
+    filename, number, text = lines[0]
 
-        if split_indent(text)[0] != 0:
-            raise ParseError(
-                "Unexpected indentation at start of file.",
-                filename, number, text=text)
+    if text.startswith(" "):
+        raise ParseError(
+            "Unexpected indentation at start of file.",
+            filename, number, text=text)
 
-    return gll_core(lines, 0, 0)[0]
+    stack: list[tuple[int, list[GroupedLine]]] = [(0, [])]
+    block_indent, block = stack[-1]
+
+    for filename, number, text in lines:
+        rest = text.lstrip(" ")
+        indent = len(text) - len(rest)
+
+        # Indent.
+        if indent > block_indent:
+            block_indent = indent
+            block = block[-1].block
+            stack.append((block_indent, block))
+
+        # Dedent.
+        elif indent < block_indent:
+            stack.pop()  # Safe because indent can't be less than 0, so stack is never empty.
+            while stack:
+                block_indent, block = stack[-1]
+                if indent == block_indent:
+                    break
+
+                stack.pop()
+
+            else:
+                raise ParseError(
+                    "Indentation mismatch.",
+                    filename, number, text=text)
+
+        block.append(GroupedLine(filename, number, indent, text, []))
+
+    return stack[0][1]
 
 
 # A list of keywords which should not be parsed as names, because
@@ -1600,25 +1622,13 @@ class Lexer(object):
         return sp
 
 
-def ren_py_to_rpy(text: str, filename: str | None) -> str:
+def ren_py_to_rpy_offsets(lines: list[str], filename: str):
     """
-    Transforms an _ren.py file into the equivalent .rpy file. This should retain line numbers.
-
-    `filename`
-        If not None, and an error occurs, the error is reported with the given filename.
-        Otherwise, errors are ignored and a best effort is used.
+    Takes a list of lines of _ren.py file, and yields a None if line of equivalent .rpy file
+    should be ignored, or an integer of extra indent for that line.
     """
 
-    lines = text.splitlines()
-
-    # Skip the BOM, if any.
-    if lines and lines[0][:1] == u'\ufeff':
-        lines[0] = lines[0][1:]
-
-    result = [ ]
-
-    # The prefix prepended to Python lines.
-    prefix = ""
+    current_offset = 0
 
     # Possible states.
     IGNORE = 0
@@ -1631,61 +1641,86 @@ def ren_py_to_rpy(text: str, filename: str | None) -> str:
     open_linenumber = 0
 
     for linenumber, l in enumerate(lines, start=1):
-
         if state != RENPY:
             if l.startswith('"""renpy'):
                 state = RENPY
-                result.append('')
                 open_linenumber = linenumber
+                yield None
                 continue
 
         if state == RENPY:
-            if l == '"""':
+            if l.strip() == '"""':
+                yield None
+
                 state = PYTHON
-                result.append('')
                 continue
 
             # Ignore empty and comments.
             sl = l.strip()
-            if not sl:
-                result.append(l)
-                continue
-
-            if sl[0] == "#":
-                result.append(l)
+            if not sl or sl[0] == "#":
+                yield 0
                 continue
 
             # Determine the prefix.
-            prefix = ""
+            current_offset = 0
             for i in l:
                 if i != ' ':
                     break
-                prefix += ' '
+                current_offset += 1
 
             # If the line ends in ":", add 4 spaces to the prefix.
+            # XXX: This does not work for 'init python: # Comment'...
             if sl[-1] == ":":
-                prefix += "    "
+                current_offset += 4
 
-            result.append(l)
+            yield 0
             continue
 
         if state == PYTHON:
-            result.append(prefix + l)
+            if l == "\n":
+                # Don't add spaces to empty lines to not interfere with multiline strings.
+                yield 0
+            else:
+                yield current_offset
             continue
 
         if state == IGNORE:
-            result.append('')
+            yield None
             continue
 
-    if filename is not None:
+    if state == IGNORE:
+        raise ParseError(f'There are no \'"""renpy\' blocks, so every line is ignored.',
+                        filename, open_linenumber)
 
-        if state == IGNORE:
-            raise Exception('In {!r}, there are no """renpy blocks, so every line is ignored.'.format(filename))
+    if state == RENPY:
+        raise ParseError(f'\'"""renpy\' block was not terminated by """.',
+                        filename, open_linenumber)
 
-        if state == RENPY:
-            raise Exception(
-                'In {!r}, there is a """renpy block at line {} that is not terminated by """.'.format(
-                    filename, open_linenumber))
+
+def ren_py_to_rpy(text: str, filename: str | None) -> str:
+    """
+    Transforms an _ren.py file into the equivalent .rpy file. This should retain line numbers.
+
+    `filename`
+        If not None, and an error occurs, the error is reported with the given filename.
+        Otherwise, errors are ignored and a best effort is used.
+    """
+
+    lines = text.splitlines()
+
+    result = [ ]
+
+    # Consume as much as possible from the input
+    try:
+        for offset, line in zip(ren_py_to_rpy_offsets(lines, filename or "<string>"), lines):
+            if offset is None:
+                result.append("")
+            else:
+                result.append(f"{' ' * offset}{line}")
+
+    except Exception:
+        if filename is not None:
+            raise
 
     rv = "\n".join(result)
 
