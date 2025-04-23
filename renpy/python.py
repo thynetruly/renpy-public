@@ -854,7 +854,6 @@ py_compile_cache = { }
 # An old version of the same, that's preserved across reloads.
 old_py_compile_cache = { }
 
-LocatableNode = ast.stmt|ast.expr
 
 class LocationFixer:
     """
@@ -876,14 +875,24 @@ class LocationFixer:
     first_line_col_delta: int
     rest_line_col_delta: int
 
-    def __init__(self, node: ast.stmt|ast.expr, line_delta: int=0, first_line_col_delta: int=0, rest_line_col_delta: int=0):
+    def __init__(
+        self, node: ast.Module | ast.Expression, line_delta: int = 0,
+        first_line_col_delta: int = 0, rest_line_col_delta: int = 0,
+    ):
         self.line_delta = line_delta
         self.first_line_col_delta = first_line_col_delta
         self.rest_line_col_delta = rest_line_col_delta
 
         self.fix(node, 1 + line_delta, first_line_col_delta)
 
-    def fix(self, node: ast.stmt|ast.expr, lineno=1, col_offset=0):
+    def fix(self, node: ast.stmt, lineno: int, col_offset: int):
+        # Not all nodes have location attributes, e.g. expr_context.
+        # But it's either none of them, or all 4 of them.
+        if 'lineno' not in node._attributes:
+            for c in ast.iter_child_nodes(node):
+                self.fix(c, lineno, col_offset)
+
+            return
 
         # This finds missing attributes by triggering AttributeErrors if an attribute is missing.
         try:
@@ -893,10 +902,11 @@ class LocationFixer:
                 node.col_offset += self.rest_line_col_delta
 
             node.lineno += self.line_delta
+            lineno, col_offset = node.lineno, node.col_offset
 
         except (AttributeError, TypeError):
-            node.lineno = 1 + self.line_delta
-            node.col_offset = self.first_line_col_delta
+            node.lineno = lineno
+            node.col_offset = col_offset
 
         try:
 
@@ -911,22 +921,16 @@ class LocationFixer:
             node.end_lineno = node.lineno
             node.end_col_offset = node.col_offset
 
-        start = max(
-            (lineno, col_offset),
-            (node.lineno, node.col_offset)
-        )
+        end = (node.end_lineno, node.end_col_offset)
+        for c in ast.iter_child_nodes(node):
+            self.fix(c, lineno, col_offset)
 
-        lineno, col_offset = start
-        node.lineno = lineno
-        node.col_offset = col_offset
+            # Not all children may have end location attributes.
+            if 'lineno' in c._attributes:
+                if end < (c_end := (c.end_lineno, c.end_col_offset)):
+                    end = c_end
 
-        ends = [ start, (node.end_lineno, node.end_col_offset) ]
-
-        for child in ast.iter_child_nodes(node):
-            self.fix(child, lineno, col_offset)
-            ends.append((child.end_lineno, child.end_col_offset))
-
-        node.end_lineno, node.end_col_offset = max(ends)
+        node.end_lineno, node.end_col_offset = end
 
 
 def quote_eval(s):
@@ -1017,6 +1021,20 @@ def quote_eval(s):
     # Since the last 2 characters are \0, those characters need to be stripped.
     return "".join(rv[:-2])
 
+IMMUTABLE_TYPES = (int, float, str, bool, bytes, type(None), complex)
+
+def is_immutable_value(v):
+    """
+    Returns True if v is an immutable value, and False if it is not.
+    """
+
+    if isinstance(v, IMMUTABLE_TYPES):
+        return True
+
+    if isinstance(v, tuple):
+        return all(is_immutable_value(i) for i in v)
+
+    return False
 
 
 def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=True, py=None, hashcode=None, column=0):
@@ -1085,6 +1103,9 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
 
     flags = file_compiler_flags.get(filename, 0)
 
+    if renpy.config.future_annotations:
+        flags |= __future__.annotations.compiler_flag
+
     if cache:
 
         key = (hashcode, lineno, filename, mode, renpy.script.PYC_MAGIC, flags, column)
@@ -1125,7 +1146,22 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
     source = str(source)
     source = source.replace("\r", "")
 
-    if mode == "eval":
+    if mode == "eval" and not ast_node:
+
+        # If possible, compute the value of immutable literals.
+        try:
+
+            rv = ast.literal_eval(source)
+            if is_immutable_value(rv):
+                rv = ("literal", rv)
+                py_compile_cache[key] = rv
+                renpy.game.script.bytecode_newcache[key] = marshal.dumps(rv)
+
+                return rv
+
+        except ValueError:
+            pass
+
         source = quote_eval(source)
 
     line_offset = lineno - 1
@@ -1138,7 +1174,9 @@ def py_compile(source, mode, filename='<none>', lineno=1, ast_node=False, cache=
             py_mode = mode
 
         tree: Any = None
+
         with save_warnings():
+
             try:
                 tree = compile(
                     source,
@@ -1253,6 +1291,9 @@ def py_exec(source, hide=False, store=None):
 
 
 def py_eval_bytecode(bytecode, globals=None, locals=None): # @ReservedAssignment
+
+    if bytecode.__class__ is tuple:
+        return bytecode[1]
 
     if globals is None:
         globals = store_dicts["store"] # @ReservedAssignment

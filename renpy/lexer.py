@@ -592,7 +592,7 @@ def group_logical_lines(lines: list[tuple[str, int, str]]) -> list[GroupedLine]:
                     "Indentation mismatch.",
                     filename, number, text=text)
 
-        block.append(GroupedLine(filename, number, indent, text, []))
+        block.append(GroupedLine(filename, number, indent, rest, []))
 
     return stack[0][1]
 
@@ -1210,9 +1210,8 @@ class Lexer(object):
     def python_string(self):
         """
         This tries to match a python string at the current
-        location. If it matches, it returns True, and the current
-        position is updated to the end of the string. Otherwise,
-        returns False.
+        location. If it matches, it returns the string, including
+        delimiters. If not, returns None.
         """
 
         if self.eol():
@@ -1225,7 +1224,7 @@ class Lexer(object):
 
         if not start:
             self.pos = old_pos
-            return False
+            return None
 
         delim = start.lstrip('urfURF')
 
@@ -1243,7 +1242,7 @@ class Lexer(object):
 
             self.match(r'.[^\'"\\]*')
 
-        return True
+        return self.text[old_pos:self.pos]
 
     def dotted_name(self):
         """
@@ -1516,14 +1515,7 @@ class Lexer(object):
         self.pos = len(self.text)
         return self.expr(self.text[pos:].strip(), True)
 
-    def rest_statement(self):
-        """
-        Like rest, but returns a string rather than a PyExpr.
-        """
-
-        pos = self.pos
-        self.pos = len(self.text)
-        return self.text[pos:].strip()
+    rest_statement = rest
 
     def _process_python_block(self, block, rv, line_holder):
 
@@ -1723,5 +1715,35 @@ def ren_py_to_rpy(text: str, filename: str | None) -> str:
             raise
 
     rv = "\n".join(result)
+
+    return rv
+
+
+def lex_string(text: str, filename: str = "<string>", linenumber: int = 1, advance: bool = True) -> Lexer:
+    """
+    :doc: lexer
+
+    Returns a Lexer object that can be used to lex the given text.
+
+    `text`
+        The text to lex.
+
+    `filename`
+        A filename for which errros will be reported.
+
+    `linenumber`
+        A line number for which errors will be reported.
+
+    `advance`
+        If true, the .advance() method will be called on the lexer.
+    """
+
+    lines = list_logical_lines(filename, text, linenumber)
+    nested = group_logical_lines(lines)
+
+    rv = Lexer(nested)
+
+    if advance:
+        rv.advance()
 
     return rv

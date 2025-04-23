@@ -143,6 +143,12 @@ class Persistent(object):
                 "_seen_translates" : 0,
             }
 
+        if self._version is None:
+            self._version = renpy.config.version
+
+        if cb := renpy.config.persistent_callback:
+            cb(self)
+
 
 renpy.game.Persistent = Persistent # type: ignore
 renpy.game.persistent = Persistent()
@@ -254,6 +260,8 @@ def init():
     disk, so that we can configure the savelocation system.
     """
 
+    global persistent_mtime
+
     if renpy.config.early_developer:
         init_debug_pickler()
 
@@ -266,6 +274,8 @@ def init():
 
     if persistent is None:
         persistent = Persistent()
+    else:
+        persistent_mtime = os.path.getmtime(filename)
 
     # Create the backup of the persistent data.
     for k, v in persistent.__dict__.items():
@@ -432,7 +442,7 @@ def update(force_save=False):
 
     # A list of (mtime, other) pairs, where other is a persistent file
     # we might want to merge in.
-    pairs = renpy.loadsave.location.load_persistent()
+    pairs = renpy.loadsave.location.load_persistent(consume=True)
     pairs.sort(key=lambda a : a[0])
 
     # Deals with the case where we don't have any persistent data for

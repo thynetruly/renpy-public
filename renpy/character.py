@@ -315,7 +315,7 @@ def show_display_say(who, what, who_args={}, what_args={}, window_args={},
     @param who: The name of the character that is speaking, or None to
     not show this name to the user.
 
-    @param what: What that character is saying. Please not that this
+    @param what: What that character is saying. Please note that this
     may not be a string, as it can also be a list containing both text
     and displayables, suitable for use as the first argument of ui.text().
 
@@ -721,6 +721,9 @@ def display_say(
 
                 if extend_text:
                     extend_text = "{done}" + extend_text
+
+                    if last_pause:
+                        what_ctc = ctc_pause # show ctc_pause when using extend
 
             # Show the text.
 
@@ -1400,9 +1403,10 @@ class ADVCharacter(object):
             if multiple_count == multiple[1]:
                 multiple_count = 0
 
-        if multiple is None:
 
-            old_attr_state = self.handle_say_attributes(False, interact)
+        old_attr_state = self.handle_say_attributes(False, interact)
+
+        if multiple is None:
 
             old_side_image_attributes = renpy.store._side_image_attributes
 
@@ -1489,13 +1493,13 @@ class ADVCharacter(object):
             if (multiple is None) and interact:
                 renpy.store._side_image_attributes = old_side_image_attributes # type: ignore
 
-                if old_attr_state is not None: # type: ignore
-                    _, images = old_attr_state # type: ignore
-                    before = images.get_attributes(None, self.image_tag)
+            if old_attr_state is not None: # type: ignore
+                _, images = old_attr_state # type: ignore
+                before = images.get_attributes(None, self.image_tag)
 
-                if self.restore_say_attributes(False, old_attr_state, interact): # type: ignore
-                    after = images.get_attributes(None, self.image_tag) # type: ignore
-                    self.handle_say_transition('restore', before, after) # type: ignore
+            if self.restore_say_attributes(False, old_attr_state, interact): # type: ignore
+                after = images.get_attributes(None, self.image_tag) # type: ignore
+                self.handle_say_transition('restore', before, after) # type: ignore
 
     def statement_name(self):
         if not (self.condition is None or renpy.python.py_eval(self.condition)):
@@ -1641,7 +1645,7 @@ def Character(name=NotSet, kind=None, **properties):
          character.
 
     **Voice Tag.**
-    If a voice tag is assign to a Character, the voice files that are
+    If a voice tag is assigned to a Character, the voice files that are
     associated with it, can be muted or played in the preference
     screen.
 

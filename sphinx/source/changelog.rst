@@ -58,12 +58,49 @@ Ren'Py now leaves the decision of if to create mipmaps to the developer, who kno
 image. To always enable mipmaps, set :var:`config.mipmap` to True. If this isn't set to true, Ren'Py will only
 create mipmaps if the display is scaled down to less than 75% of the virtual window size.
 
-Mipmaps will automatically be created for images loaded for the purpose of Live2D or AssimpModel, as these are
+Mipmaps will automatically be created for images loaded for the purpose of Live2D or GLTFModel, as these are
 likely to be scaled down.  Mipmaps can be created for specific images by providing True to the mipmap parameter
 of :func:`Image`.
 
+Texture Uniforms
+----------------
+
+Inside Transforms, Ren'Py now supports uniforms of type sampler2D. These are textures that are set up
+to sample textures. These transforms can be supplied a displayable or a string that becomes a displayable.
+
+
+Accessibility
+-------------
+
+The shift+A accessibility menu has been redesigned. It's now smaller, so that the bottom of the game
+(usually including dialogue) is visible, allowing the effects of the menu to be seen more immediately.
+It also has been broken up into multiple pages, to allow for new options to be added.
+
+Ren'Py can now force audio to mono, allowing sounds contain information on only the left or right channel
+to become audible on both. This can be enabled through the shift+A accessibility menu, the "force mono" :func:`Preference`,
+or the :var:`preferences.force_mono` variable.
+
+Ren'Py now includes a preference to allow the user to adjust font kerning. This is exposed through the
+accessibility menu, the "font kerning" :func:`Preference`, and the :var:`preferences.font_kerning` variable.
+
+
 Features
 --------
+
+The new :func:`renpy.lex_string` function makes it possible to create a Lexer for an arbitrary string.
+
+The :class:`SpriteManager` and :func:`SnowBlossom` displayables now support the `animation` parameter,
+which can be used to prevent resetting when the displayable is reshown.
+
+The :class:`Gallery` class now supports separate transitions when entering a sequence of images, going
+between images, and exiting the sequence of images.
+
+Screens now support python-style docstrings, which are used when a string is included as the first line
+of the block. Ren'Py does not do anything directly with dosctrings, but the raw string can be accessed
+using :func:`renpy.get_screen_docstring`.
+
+The :class:`Confirm` action and :func:`renpy.confirm` function now pass additional keyword arguments (not beginning
+with _) to the confirm screen.
 
 The screen language :ref:`use <sl-use>` statement now takes an ``as`` clause, which can be used to capture a
 variable named `main` from the screen. This is intended to be used like the ``as`` clause of screen language
@@ -99,9 +136,15 @@ apply :ref:`text interpolation <text-interpolation>` to the result. Interpolatio
 that the function is called from. The triple underscore function also marks the string contained
 inside for translation.
 
+The :var:`config.persistent_callback` callback makes it possible to update persistent data when it is loaded.
+
 
 Other Changes
 -------------
+
+In some circumstances, Ren'Py will reuse tuples containing immutable values (float, int, bool,
+complex, str, bytes, and other immutable tuples), which can reduce memory usage and improve performance. This
+may lead to these immutable tuples having the same object identity when previously they would not have.
 
 By default, Ren'Py now only creates mipmaps for textures if the display is scaled down to less than .75 of virtual
 window size. This is suitable for games that do not scale down images. To enable mipmapping again, set
@@ -131,6 +174,69 @@ The "Image Attributes" screen also indicates if transforms are applied to a laye
 to determine otherwise.
 
 Ren'Py now also searches for `.rpe` and `.rpe.py` files in the new libs directory.
+
+
+.. _renpy-8.3.7:
+.. _renpy-7.8.7:
+
+8.3.7 / 7.8.7
+=============
+
+Live2D
+------
+
+Fixed an issue where Expressions with a fadeout time of 0 would not hide properly.
+
+Fixed an issue where Ren'Py would incorrectly size Live2D clipping masks. As this problem only affected layers that
+used clipping, this would often manifest as eyes being missing.
+
+Live2D fading now uses cosine easing, as the Cubism Native SDK does.
+
+Arabic Text Shaping
+-------------------
+
+(As these changes require the Harfbuzz text shaper, the changes are only available in Ren'Py 8.)
+
+When :var:`config.rtl` is set to True and Harfbuzz is enabled, Ren'Py will unmap Arabic presentation forms and allow
+harfbuzz to fully shape Arabic text. This allows Ren'Py to work with fonts that do not contain Arabic presentation
+forms directly, but instead use ligaturization.
+
+An issue with Harbuzz's adjustments of vertical positions has been fixed. This improves the positioning of text
+where ligatures control the vertical positioning of the text. While this affects some Arabic fonts, it also may
+improve the location of marks in other fonts.
+
+Changes
+-------
+
+Vertex and fragment functions created with :func:`renpy.register_shader` are now placed after the
+variables defined by the shaders, making it possible to use uniforms in the functions.
+
+Displayables embedded in slow text (most notably, nestled click-to-continue indicators) are now timed from
+when the displayable is revealed, rather than when the text block itself is show. This means that the first
+frame of CTC animations will always be seen.
+
+Fixes
+-----
+
+Ren'Py will no longer change the position of newly-created maximized windows.
+
+Problems caused by registering an audio channel more than once have been fixed.
+
+Multiple say statements can now contain image attributes, like other say statements. Temporary image attributes
+are only supported in the last say statement in a multiple group.
+
+Games made with Ren'Py 8.0 and 8.1 will have Python compiled with ``from __future__ import annotations``, matching
+how Python in those versions was originally compiled.
+
+:class:`SpriteManager` will no longer merge instances of a displayable that maintains internal state, like
+transforms. This is more correct, but slightly less efficient.
+
+The language is now set when the game starts or is loaded, ensuring that ``translate python`` blocs are always
+run in the game context.
+
+Text shaders now respect :propref:`slow_cps_multiplier`.
+
+
 
 .. _renpy-8.3.6:
 .. _renpy-7.8.6:

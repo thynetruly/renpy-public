@@ -28,6 +28,13 @@ import renpy
 from renpy.parameter import Signature, ValuedParameter
 from renpy.pyanalysis import Analysis, NOT_CONST, GLOBAL_CONST
 
+def late_imports():
+    global Displayable, Matrix, Camera
+
+    from renpy.display.displayable import Displayable
+    from renpy.display.matrix import Matrix
+    from renpy.display.transform import Camera
+
 def compiling(loc):
     file, number = loc # @ReservedAssignment
 
@@ -223,6 +230,7 @@ def mesh(x):
 # function. This is massively added to by renpy.display.transform.
 PROPERTIES = { }
 
+tuple_or_list = (tuple, list)
 
 def interpolate(t, a, b, typ):
     """
@@ -230,18 +238,18 @@ def interpolate(t, a, b, typ):
     """
 
     # Deal with booleans, nones, etc.
-    if b is None or isinstance(b, (bool, str, renpy.display.matrix.Matrix, renpy.display.transform.Camera)):
+    if b is None or isinstance(b, (bool, str, Displayable, Matrix, Camera)):
         if t >= 1.0:
             return b
         else:
             return a
 
     # Recurse into tuples.
-    elif isinstance(b, tuple):
-        if not isinstance(a, tuple):
+    elif isinstance(b, tuple_or_list):
+        if not isinstance(a, tuple_or_list):
             a = [ None ] * len(b)
 
-        if not isinstance(typ, tuple):
+        if not isinstance(typ, tuple_or_list):
             typ = (typ,) * len(b)
 
         return tuple(interpolate(t, i, j, ty) for i, j, ty in zip(a, b, typ))
@@ -1340,6 +1348,28 @@ class RawMultipurpose(RawStatement):
                 renpy.easy.predict(i)
             except Exception:
                 continue
+
+        for k, e in self.properties:
+            if k[:2] == "u_":
+
+                try:
+                    d = ctx.eval(e)
+                except Exception:
+                    continue
+
+                if isinstance(d, str):
+                    d = renpy.easy.displayable(d)
+
+                if not isinstance(d, Displayable):
+                    continue
+
+                try:
+                    d = renpy.display.im.unoptimized_texture(d)
+                    renpy.easy.predict(d)
+                except Exception:
+                    continue
+
+
 
 # This lets us have an ATL transform as our child.
 class RawContainsExpr(RawStatement):

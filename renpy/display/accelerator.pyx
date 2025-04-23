@@ -26,6 +26,8 @@ import renpy
 import math
 from renpy.display.matrix cimport Matrix
 from renpy.display.render cimport Render, Matrix2D, render, MATRIX_VIEW, MATRIX_PROJECTION
+
+from renpy.display.displayable import Displayable
 from renpy.display.core import absolute
 
 from sdl2 cimport *
@@ -105,7 +107,7 @@ def get_poi(state):
 # Transform render function
 ################################################################################
 
-cdef Matrix2D IDENTITY
+cdef Matrix IDENTITY
 IDENTITY = renpy.display.render.IDENTITY
 
 
@@ -452,6 +454,7 @@ cdef class RenderTransform:
         cdef double rxdy
         cdef double rydx
         cdef double rydy
+        cdef double rzdz
         cdef double x2
         cdef double x3
         cdef double x4
@@ -478,11 +481,12 @@ cdef class RenderTransform:
         fit = self.state.fit
 
         # The reverse matrix used by the zoom and rotate properties.
-        # (This can probably become a Matrix at some point.)
         rxdx = 1
         rxdy = 0
         rydx = 0
         rydy = 1
+
+        rzdz = 1
 
         # Size.
         if (width != 0) and (height != 0):
@@ -573,6 +577,9 @@ cdef class RenderTransform:
             if yzoom < 0:
                 yo += height
 
+        if zoom != 1:
+            rzdz = zoom
+
         # Rotation.
         rotate = state.rotate
         if (rotate is not None) and (not self.perspective):
@@ -633,10 +640,14 @@ cdef class RenderTransform:
         self.xo = xo
 
         # Default case - no transformation matrix.
-        if rxdx == 1 and rxdy == 0 and rydx == 0 and rydy == 1:
+        if rxdx == 1 and rxdy == 0 and rydx == 0 and rydy == 1 and rzdz == 1:
             self.reverse = IDENTITY
         else:
-            self.reverse = Matrix2D(rxdx, rxdy, rydx, rydy)
+            self.reverse = Matrix((
+                rxdx, rxdy, 0,
+                rydx, rydy, 0,
+                0, 0, rzdz,
+            ))
 
     cdef camera_matrix_operations(self):
         """
@@ -884,7 +895,7 @@ cdef class RenderTransform:
 
             self.reverse = m * self.reverse
 
-    cdef final_render(self, rv):
+    cdef final_render(self, rv, st, at):
         """
         Apply properties to the final render:
 
@@ -949,6 +960,9 @@ cdef class RenderTransform:
 
         for name in renpy.display.transform.uniforms:
             value = getattr(state, name, None)
+
+            if isinstance(value, Displayable):
+                value = value.render(rv.width, rv.height, st, at)
 
             if value is not None:
                 rv.add_uniform(name, value)
@@ -1068,7 +1082,7 @@ cdef class RenderTransform:
         if mesh and perspective:
             rv = self.make_mesh(rv)
 
-        self.final_render(rv)
+        self.final_render(rv, st, at)
 
         # Clipping.
         rv.xclipping = self.clipping

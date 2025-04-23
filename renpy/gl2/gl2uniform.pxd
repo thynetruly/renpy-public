@@ -1,3 +1,4 @@
+#cython: profile=False
 # Copyright 2004-2025 Tom Rothamel <pytom@bishoujo.us>
 #
 # Permission is hereby granted, free of charge, to any person
@@ -19,28 +20,37 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-from renpy.display.matrix cimport Matrix
+from renpy.uguu.gl cimport *
+from renpy.gl2.gl2draw cimport GL2DrawingContext
+from renpy.gl2.gl2model cimport GL2Model
 
-# Represents a 2D point inside a polygon.
-cdef struct Point2:
-    float x
-    float y
-
-cdef class Polygon:
+cdef class Getter:
     """
-    Represents a 2-dimensional polygon.
+    Subclasses of this class are responsioble for getting uniform data.
     """
 
-    # The number of points in the polygon.
-    cdef int points
+    cdef str uniform_name
+    "The name of the uniform."
 
-    # The points.
-    cdef Point2 *point
+    cdef object get(self, GL2DrawingContext context, GL2Model model)
 
-    cpdef Polygon intersect(Polygon self, Polygon p)
-    cpdef Polygon copy(Polygon self)
-    cpdef void multiply_matrix_inplace(Polygon self, Matrix m)
-    cpdef Polygon multiply_matrix(Polygon self, Matrix m)
-    cpdef void ensure_winding(Polygon self)
-    cpdef void offset_inplace(Polygon self, float x, float y)
-    cpdef Polygon offset(Polygon self, float x, float y)
+
+cdef class Setter:
+    """
+    Subclasses of this class are responsible for setting unforms of a
+    given type.
+    """
+
+    cdef str uniform_name
+    "The name of the uniform."
+
+    cdef str uniform_type
+    "The type of the uniform."
+
+    cdef GLint location
+    "The location the uniform is stored in."
+
+    cdef Getter getter
+    "The getter that's used to get the data for this uniform."
+
+    cdef object set(self, GL2DrawingContext context, value)

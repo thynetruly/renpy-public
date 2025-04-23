@@ -111,7 +111,7 @@ class TextMeshDisplayable(renpy.display.core.Displayable):
         else:
 
             for model, x, y, focus, main in self.tex.children:
-                tex = model.uniforms["tex0"]
+                tex = model.get_texture(0)
                 w, h = tex.get_size()
 
                 # Adjust the size for the texture borders.
@@ -349,8 +349,10 @@ class TextSegment(object):
         rv = fo.glyphs(s)
 
         # Apply kerning to the glyphs.
-        if self.kerning:
-            textsupport.kerning(rv, self.kerning)
+        kerning = self.kerning + self.size / 30 * renpy.game.preferences.font_kerning
+
+        if kerning:
+            textsupport.kerning(rv, kerning)
 
         if self.hyperlink:
             for g in rv:
@@ -956,12 +958,7 @@ class Layout(object):
 
         di = DrawInfo()
 
-        depth = len(self.outlines)
-        max_depth = depth - 1
-
         for o, color, xo, yo in self.outlines:
-            depth -= 1
-
             key = (o, color)
 
             if key in self.textures:
@@ -1025,8 +1022,13 @@ class Layout(object):
             self.textures[key] = tex
 
         if self.textshaders:
+            depth = len(self.outlines)
+            max_depth = depth - 1
+
             for o, color, xo, yo in self.outlines:
                 tex = self.textures[(o, color)]
+
+                depth -= 1
 
                 for ts in self.textshaders:
                     mr = self.create_mesh_displayable(o, tex, lines, xo, yo, depth, max_depth, ts)
@@ -1585,6 +1587,10 @@ class Layout(object):
 
         for ts, s in p:
             s, direction = log2vis(str(s), direction)
+
+            if s and getattr(ts, "shaper", "") == "harfbuzz":
+                s = renpy.text.extras.unmap_arabic_presentation_forms(s)
+
             l.append((ts, s))
 
         rtl = (direction == RTL or direction == WRTL)
@@ -2018,6 +2024,7 @@ class Text(renpy.display.displayable.Displayable):
     mask = None
     last_ctc = None
     tokenized = False
+    slow_done_time = None
 
     def after_upgrade(self, version):
 
@@ -2082,6 +2089,9 @@ class Text(renpy.display.displayable.Displayable):
         # The callback to be called when slow-text mode ends.
         self.slow_done = slow_done # type:Callable|None
 
+        # The time at which the slow text was done.
+        self.slow_done_time = None # type: float|None
+
         # The ctc indicator associated with this text.
         self.ctc = None
 
@@ -2093,6 +2103,7 @@ class Text(renpy.display.displayable.Displayable):
         if isinstance(replaces, Text):
             self.slow = replaces.slow
             self.slow_done = replaces.slow_done
+            self.slow_done_time = replaces.slow_done_time
             self.ctc = replaces.ctc
             self.start = replaces.start
             self.end = replaces.end
@@ -2595,19 +2606,22 @@ class Text(renpy.display.displayable.Displayable):
             else:
                 self.slow = False
 
+        if not self.slow and self.slow_done_time is not None:
+            self.slow_done_time = st
+
         if self.dirty or self.displayables is None:
             self.update()
 
         # Render all of the child displayables.
         renders = { }
 
-        for i in self.displayables:
-            renders[i] = renpy.display.render.render(i, width, self.style.size, st, at)
-
         # Find the virtual-resolution layout.
         virtual_layout = self.get_virtual_layout()
 
         if virtual_layout is None or virtual_layout.width != width or virtual_layout.height != height:
+
+            for i in self.displayables:
+                renders[i] = renpy.display.render.render(i, width, self.style.size, 0, 0)
 
             virtual_layout = Layout(self, width, height, renders, drawable_res=False, size_only=True)
 
@@ -2621,12 +2635,18 @@ class Text(renpy.display.displayable.Displayable):
 
         if layout is None or layout.width != width or layout.height != height:
 
+            if not renders:
+                for i in self.displayables:
+                    renders[i] = renpy.display.render.render(i, width, self.style.size, 0, 0)
+
             layout = Layout(self, width, height, renders, splits_from=virtual_layout)
 
             if len(layout_cache_new) > LAYOUT_CACHE_SIZE:
                 layout_cache_new.clear()
 
             layout_cache_new[id(self)] = layout
+
+        del renders
 
         # The laid-out size of this Text.
         vw, vh = virtual_layout.size
@@ -2662,22 +2682,29 @@ class Text(renpy.display.displayable.Displayable):
             drend.forward = layout.reverse
             drend.reverse = layout.forward
 
-            for d, x, y, width, ascent, line_spacing, t in layout.displayable_blits:
+            for d, x, y, child_width, ascent, line_spacing, t in layout.displayable_blits:
 
                 if self.slow and t > st:
                     continue
 
+                if self.slow_done_time is not None:
+                    cst = st - min(self.slow_done_time, t)
+                else:
+                    cst = st - t
+
                 xo, yo = renpy.display.displayable.place(
-                    width,
+                    child_width,
                     ascent,
-                    width,
+                    child_width,
                     line_spacing,
                     d.get_placement())
 
                 xo = x + xo + layout.xoffset
                 yo = y + yo + layout.yoffset
 
-                drend.absolute_blit(renders[d], (xo, yo))
+                cr = renpy.display.render.render(d, width, self.style.size, cst, at)
+
+                drend.absolute_blit(cr, (xo, yo))
 
                 if layout.reverse:
                     xo, yo = layout.reverse.transform(xo, yo)

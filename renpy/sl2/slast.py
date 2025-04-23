@@ -51,6 +51,8 @@ from renpy.pyanalysis import Analysis, NOT_CONST, LOCAL_CONST, GLOBAL_CONST, cca
 import hashlib
 import time
 
+from renpy.python import py_eval as eval
+
 # This file contains the abstract syntax tree for a screen language
 # screen.
 
@@ -2519,6 +2521,7 @@ class SLScreen(SLBlock):
     layer = "'screens'"
     sensitive = "True"
     roll_forward = "None"
+    docstring = None
 
     def __init__(self, loc):
 
@@ -2555,6 +2558,9 @@ class SLScreen(SLBlock):
         # True if this screen has been prepared.
         self.prepared = False
 
+        # The docstring for this screen, or None if there is none.
+        self.docstring = None
+
     def copy(self, transclude):
         rv = self.instantiate(transclude) # type: ignore
 
@@ -2590,6 +2596,7 @@ class SLScreen(SLBlock):
             layer=renpy.python.py_eval(self.layer),
             sensitive=self.sensitive,
             roll_forward=renpy.python.py_eval(self.roll_forward),
+            docstring=renpy.python.py_eval(self.docstring) if self.docstring else None,
             )
 
     def analyze(self, analysis):

@@ -135,7 +135,9 @@ cdef class TextureLoader:
                     0.0, 0.0, 0.0, 0.0)
 
 
-            rv = GL2Model((pw, ph), mesh, ("renpy.texture",), { "tex0" : rv, "res0" : (rv.texture_width, rv.texture_height) })
+            old_rv = rv
+            rv = GL2Model((pw, ph), mesh, ("renpy.texture",) )
+            rv.set_texture(0, old_rv)
 
         return rv
 
@@ -163,7 +165,7 @@ cdef class TextureLoader:
 
             rv = [ ]
 
-            for i in xrange(tiles):
+            for i in range(tiles):
                 start = int(i * tile_length)
                 end = int((i + 1) * tile_length)
 
@@ -289,6 +291,15 @@ cdef class GLTexture(GL2Model):
         self.br = 0
         self.bb = 0
 
+        # States used by gl2unfiorm.
+        self.wrap_s = GL_CLAMP_TO_EDGE
+        self.wrap_t = GL_CLAMP_TO_EDGE
+        self.anisotropy = loader.max_anisotropy
+        self.mag_filter = GL_LINEAR
+        self.min_filter = GL_LINEAR
+        self.default_mag_filter = GL_LINEAR
+        self.default_min_filter = GL_LINEAR
+
         if renpy.emscripten and generate:
             # Generate a texture name to access video frames for web
             glGenTextures(1, &number)
@@ -401,8 +412,7 @@ cdef class GLTexture(GL2Model):
         glEnable(GL_BLEND)
         glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA)
 
-        context = renpy.gl2.gl2draw.GL2DrawingContext(draw, tw, th)
-        context.draw(what, transform)
+        renpy.gl2.gl2draw.draw_render(what, tw, th, transform)
 
         glBindTexture(GL_TEXTURE_2D, premultiplied)
         glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, tw, th, 0)
@@ -489,10 +499,7 @@ cdef class GLTexture(GL2Model):
 
         # Draw.
         program = self.loader.ftl_program
-        program.start({})
-        program.set_uniform("tex0", tex)
-        program.draw(mesh)
-        program.finish()
+        program.draw_ftl(tex, mesh)
 
         # Create premultiplied.
         self.allocate_texture(premultiplied, self.width, self.height, self.properties)
@@ -598,9 +605,14 @@ cdef class GLTexture(GL2Model):
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
 
         if max_level:
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST)
+            self.min_filter = GL_LINEAR_MIPMAP_NEAREST
         else:
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+            self.min_filter = GL_LINEAR
+
+        self.default_min_filter = self.min_filter
+
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, self.min_filter)
+
 
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
@@ -669,18 +681,21 @@ cdef class GLTexture(GL2Model):
         else:
             self.load_gltexture()
 
-    def program_uniforms(self, shader):
-        shader.set_uniform("tex0", self)
-        shader.set_uniform("res0", (self.texture_width, self.texture_height))
-
     cpdef subsurface(self, rect):
         rv = GL2Model.subsurface(self, rect)
         if rv is not self:
-            rv.uniforms = {
-                "tex0" : self,
-                "res0" : (self.texture_width, self.texture_height),
-                }
+            rv.set_texture(0, self)
         return rv
+
+    cpdef GL2Model get_texture(self, int i):
+        """
+        Returns the texture at index `i`.
+        """
+
+        if i == 0:
+            return self
+        else:
+            raise IndexError("GLTexture.get_texture: index out of range")
 
 class Texture(GLTexture):
     """

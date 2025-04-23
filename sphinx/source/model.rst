@@ -175,7 +175,7 @@ Ren'Py supports only the following variable types:
 * mat2 (a :class:`Matrix`)
 * mat3 (a :class:`Matrix`)
 * mat4 (a :class:`Matrix`)
-* sampler2D (supplied by Ren'Py)
+* sampler2D (a Displayabe, including strings that give Displayables, or a Render)
 
 Uniform variables should begin with u\_, attributes with a\_, and varying
 variables with v\_. Names starting with u_renpy\_, a_renpy, and v_renpy
@@ -393,6 +393,10 @@ The following uniforms are made available to all models.
     image file. After a render to texture, it's the number of drawable pixels
     the rendered texture covered.
 
+In addition, if a sampler uniform is available, then suffixing it with ``__res`` will give a vec2
+containing the underlying texture size. For example, ``u_markup__res`` will give the size of the
+``u_markup`` texture.
+
 Matrix Uniforms
 ----------------
 
@@ -422,20 +426,20 @@ are used, the innermost transformation with perspective set defines the world an
     directly to the OpenGL viewport. It exists to minimize the number of uniforms that need to be sent to the GPU,
     the amount of work that needs to be done in the shader, and for compatibility with older versions of Ren'Py.
 
-In addition to these methods, Ren'Py can sythesize matrices with certain functions applied when suffixes are
+In addition to these methods, Ren'Py can synthesize matrices with certain functions applied when suffixes are
 appended to the matrix
 
-``_inverse``
-    When appended to a matrix, this returns the inverse of the matrix. For example, ``u_projection_inverse``
+``__inverse``
+    When appended to a matrix, this returns the inverse of the matrix. For example, ``u_projection__inverse``
     is the inverse of the projection matrix.
 
-``_transpose``
-    When appended to a matrix, this returns the transpose of the matrix. For example, ``u_view_transpose``
-    is the transpose of the projection matrix.
+``__transpose``
+    When appended to a matrix, this returns the transpose of the matrix. For example, ``u_view__transpose``
+    is the transpose of the view matrix.
 
-``_inversetranspose``
+``__inversetranspose``
     When appended to a matrix, this returns the inverse of the transpose of the matrix. For example,
-    ``u_model_inversetranspose`` is the inverse of the transpose of the model matrix. This is useful for
+    ``u_model__inversetranspose`` is the inverse of the transpose of the model matrix. This is useful for
     transforming normals.
 
 Attributes

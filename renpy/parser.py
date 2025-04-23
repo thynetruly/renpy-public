@@ -1075,7 +1075,7 @@ def transform_statement(l, loc):
 
 @statement("$")
 def one_line_python(l, loc):
-    python_code = l.rest_statement()
+    python_code = l.rest()
 
     if not python_code:
         l.error('expected python code')
@@ -1699,7 +1699,8 @@ def parse(fn, filedata=None, linenumber=1):
         return None
 
     if rv:
-        rv.append(ast.Return((rv[-1].filename, rv[-1].linenumber), None))
+        linenumber = max(i[1] for i in lines) + 1
+        rv.append(ast.Return((rv[-1].filename, linenumber), None))
 
     return rv
 
