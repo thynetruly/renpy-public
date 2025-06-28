@@ -464,6 +464,8 @@ renpyAudio.queue = (channel, file, name, synchro_start, fadein, tight, start, en
 
         video_start(c);
         return;
+    } else if (c.video) {
+        throw new Error('Videos must not be stored in game.zip.');
     }
 
     const q = {
@@ -793,10 +795,11 @@ renpyAudio.can_play_types = (l) => {
     return 1;
 }
 
-renpyAudio.set_video = (channel, video, loop) => {
+renpyAudio.set_video = (channel, video, loop, web_video_prompt) => {
     const c = get_channel(channel);
     c.video = !!video;
     c.loop = !!loop;
+    renpyAudio._web_video_prompt = web_video_prompt;
 }
 
 renpyAudio.video_ready = (channel) => {
@@ -961,6 +964,3 @@ renpyAudio.videoPlayPromptHide = () => {
 };
 
 renpyAudio._web_video_prompt = 'Click to play the video.';
-//TODO? renpy_get('config.web_video_prompt').then((msg) => {
-//TODO?     renpyAudio._web_video_prompt = msg;
-//TODO? });

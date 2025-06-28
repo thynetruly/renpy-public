@@ -33,6 +33,7 @@ import time
 import tempfile
 import sys
 import io
+import re
 
 import encodings.latin_1 # @UnusedImport
 
@@ -171,6 +172,7 @@ class LogFile(object):
             if not self.raw_write:
                 try:
                     s = s % args
+                    s = re.sub(r'\x1b[^a-zA-Z]*[a-zA-Z]', '', s)
                 except Exception:
                     s = repr((s,) + args)
 
@@ -277,6 +279,12 @@ class StdioRedirector(object):
                     pass
 
         self.buffer = lines[-1]
+
+    def fileno(self):
+        return self.real_file.fileno()
+
+    def isatty(self):
+        return self.real_file.isatty()
 
     def writelines(self, lines):
         for i in lines:

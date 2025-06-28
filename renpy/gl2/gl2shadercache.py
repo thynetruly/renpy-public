@@ -127,7 +127,7 @@ class ShaderPart(object):
             else:
                 raise Exception("Keyword arguments to ShaderPart must be of the form {vertex,fragment}_{priority}.")
 
-            parts.append((priority, v))
+            parts.append((priority, name, v))
 
             for m in re.finditer(r'\b\w+\b', v):
                 used.add(m.group(0))
@@ -190,8 +190,17 @@ class ShaderPart(object):
 
         return self.expand_name(m.group(0))
 
+    def expand_operation(self, m):
+        """
+        Expands an operation match object using expand_name.
+        """
+
+        return "u_{}_OP_{}".format(m.group(1), m.group(2))
+
     def substitute_name(self, s):
-        return re.sub(r'[uavl]__\w+', self.expand_match, s)
+        rv = re.sub(r'\b[uavl]__\w+', self.expand_match, s)
+        rv = re.sub(r'\bu_(\w+)__(\w+)', self.expand_operation, rv)
+        return rv
 
 
 # A map from a tuple giving the parts that comprise a shader, to the Shader
@@ -240,7 +249,7 @@ def source(variables, parts, functions, fragment, gles):
 
     parts.sort()
 
-    for _, part in parts:
+    for _, _, part in parts:
         rv.append(part)
 
     rv.append("}\n")

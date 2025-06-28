@@ -102,7 +102,7 @@ preferences = None # type: Any
 initcode_ast_id = 0
 
 # The build_info.
-build_info = { "info" : { } }
+build_info: dict[str, Any] = { "info" : { } }
 
 
 class ExceptionInfo(object):
@@ -245,7 +245,7 @@ CONTROL_EXCEPTIONS = (
     )
 
 
-def context(index=-1):
+def context(index=-1) -> 'renpy.execution.Context':
     """
     Return the current execution context, or the context at the
     given index if one is specified.

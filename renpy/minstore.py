@@ -22,6 +22,8 @@
 from __future__ import division, absolute_import, with_statement, print_function, unicode_literals
 from renpy.compat import PY2, basestring, bchr, bord, chr, open, pystr, range, round, str, tobytes, unicode # *
 
+from typing import Callable, Any, Self, Literal, cast, overload, final, override
+
 
 xrange = range
 
@@ -62,7 +64,8 @@ from renpy.display.core import absolute
 from renpy.atl import position
 
 import renpy
-globals()["renpy"] = renpy.exports
+globals()["renpy"] = _renpy_exports = renpy.exports
+
 
 _print = print
 
