@@ -1,4 +1,4 @@
-﻿import renpy
+import renpy
 
 python_object = object
 
@@ -17,19 +17,21 @@ from renpy.atl import RawBlock, parse_atl
 from renpy.display.transform import ATLTransform
 from store import Transform, ConditionSwitch, Fixed, Null, config, Text, eval, At
 
-type Imageable = RawBlock|str|None
+type Imageable = RawBlock | str | None
 
 ATL_PROPERTIES = frozenset(renpy.atl.PROPERTIES)
 
 # The properties for the Fixed wrapping the layeredimage
-FIXED_PROPERTIES = frozenset(renpy.sl2.slproperties.position_property_names)\
-    .union(renpy.sl2.slproperties.box_property_names)
+FIXED_PROPERTIES = frozenset(renpy.sl2.slproperties.position_property_names).union(
+    renpy.sl2.slproperties.box_property_names
+)
 
 # The properties taken at the base level of the layeredimage
-BASE_PROPERTIES = ATL_PROPERTIES | FIXED_PROPERTIES \
-    | {"image_format", "format_function", "attribute_function", "offer_screen", "at"}
+BASE_PROPERTIES = (
+    ATL_PROPERTIES | FIXED_PROPERTIES | {"image_format", "format_function", "attribute_function", "offer_screen", "at"}
+)
 # The properties for all layers
-LAYER_PROPERTIES = ATL_PROPERTIES | {"if_attr", "if_all", "if_any", "if_not", "at"}
+LAYER_PROPERTIES = ATL_PROPERTIES | {"when", "if_all", "if_any", "if_not", "at"}
 # The properties for the attribute layers
 ATTRIBUTE_PROPERTIES = LAYER_PROPERTIES | {"variant", "default"}
 # The properties for the group statement
@@ -43,6 +45,7 @@ ALWAYS_PROPERTIES = LAYER_PROPERTIES
 
 # This is the default value for predict_all given to conditions.
 predict_all = None
+
 
 def format_function(what, name, group, variant, attribute, image, image_format, **kwargs):
     """
@@ -92,14 +95,13 @@ def format_function(what, name, group, variant, attribute, image, image_format, 
     """
 
     if image is None:
-
         if name is None:
             raise Exception("Can't find an image name to format {}.".format(what))
 
         if attribute is None:
             raise Exception("Can't find an attribute name to format {}.".format(what))
 
-        parts = [ name ]
+        parts = [name]
 
         if group is not None:
             parts.append(group)
@@ -125,7 +127,8 @@ def resolve_image(img: Imageable):
     else:
         return eval(img)
 
-def resolve_at(at: RawBlock|Transform|Iterable[Transform]) -> tuple[Transform, ...]:
+
+def resolve_at(at: RawBlock | Transform | Iterable[Transform]) -> tuple[Transform, ...]:
     """
     Turns an ATL RawBlock, or a Transform, or an iterable of Transforms,
     into a tuple of transforms.
@@ -135,27 +138,26 @@ def resolve_at(at: RawBlock|Transform|Iterable[Transform]) -> tuple[Transform, .
     return renpy.easy.to_tuple(at)
 
 
-class IfAttr(python_object):
+class When(python_object):
     """
-    Represents an if_attr expression.
+    Represents a when expression.
     Abstract base class.
     """
+
     __slots__ = ()
 
     def __init__(self):
-        raise Exception("IfAttr is an abstract base class.")
+        raise Exception("When is an abstract base class.")
 
     def check(self, attributes: set[str]) -> bool:
-        raise Exception # implemented in subclasses
+        raise Exception  # implemented in subclasses
 
     @staticmethod
-    def parse(l) -> "IfAttr":
-        l.require(r"\(", "parenthesized if_attr expression")
-        rv = IfOr.parse(l)
-        l.require(r"\)", "closing parenthesis")
-        return rv
+    def parse(l) -> "When":
+        return WhenOr.parse(l)
 
-class IfOr(IfAttr):
+
+class WhenOr(When):
     __slots__ = ("left", "right")
 
     def __init__(self, left, right, /):
@@ -166,13 +168,14 @@ class IfOr(IfAttr):
         return self.left.check(attributes) or self.right.check(attributes)
 
     @staticmethod
-    def parse(l) -> IfAttr:
-        rv = IfAnd.parse(l)
-        while l.match(r"\|"):# or l.keyword("or"):
-            rv = IfOr(rv, IfAnd.parse(l))
+    def parse(l) -> When:
+        rv = WhenAnd.parse(l)
+        while l.keyword("or"):  # or l.match(r"\|"):
+            rv = WhenOr(rv, WhenAnd.parse(l))
         return rv
 
-class IfAnd(IfAttr):
+
+class WhenAnd(When):
     __slots__ = ("left", "right")
 
     def __init__(self, left, right, /):
@@ -183,29 +186,31 @@ class IfAnd(IfAttr):
         return self.left.check(attributes) and self.right.check(attributes)
 
     @staticmethod
-    def parse(l) -> IfAttr:
-        rv = IfNot.parse(l)
-        while l.match(r"&"):# or l.keyword("and"):
-            rv = IfAnd(rv, IfNot.parse(l))
+    def parse(l) -> When:
+        rv = WhenNot.parse(l)
+        while l.keyword("and"):  # or l.match(r"&"):
+            rv = WhenAnd(rv, WhenNot.parse(l))
         return rv
 
-class IfNot(IfAttr):
-    __slots__ = ("ifattr",)
 
-    def __init__(self, ifattr, /):
-        self.ifattr = ifattr
+class WhenNot(When):
+    __slots__ = ("when",)
+
+    def __init__(self, when, /):
+        self.when = when
 
     def check(self, attributes):
-        return not self.ifattr.check(attributes)
+        return not self.when.check(attributes)
 
     @staticmethod
-    def parse(l) -> IfAttr:
-        if l.match(r"\!"):# or l.keyword("not"):
-            return IfNot(IfNot.parse(l))
+    def parse(l) -> When:
+        if l.keyword("not"):  # or l.match(r"\!"):
+            return WhenNot(WhenNot.parse(l))
         else:
-            return IfAttribute.parse(l)
+            return WhenAttribute.parse(l)
 
-class IfAttribute(IfAttr):
+
+class WhenAttribute(When):
     __slots__ = ("attribute",)
 
     def __init__(self, attribute, /):
@@ -215,14 +220,14 @@ class IfAttribute(IfAttr):
         return self.attribute in attributes
 
     @staticmethod
-    def parse(l) -> IfAttr:
+    def parse(l) -> When:
         if l.match(r"\("):
-            rv = IfOr.parse(l)
+            rv = WhenOr.parse(l)
             l.require(r"\)", "closing parenthesis")
             return rv
         else:
             name = l.require(l.image_name_component, "attribute name")
-            return IfAttribute(name)
+            return WhenAttribute(name)
 
 
 class Layer(object):
@@ -232,12 +237,14 @@ class Layer(object):
 
     group_args = {}
 
-    def __init__(self, if_all=[ ], if_any=[ ], if_not=[ ], at=(), group_args={}, *, if_attr: IfAttr|str|None=None, **kwargs):
+    def __init__(
+        self, if_all=[], if_any=[], if_not=[], at=(), group_args={}, *, when: When | str | None = None, **kwargs
+    ):
         self.at = resolve_at(at)
 
-        if isinstance(if_attr, str):
-            if_attr = IfAttr.parse(renpy.lexer.lex_string(if_attr))
-        self.if_attr = if_attr
+        if isinstance(when, str):
+            when = When.parse(renpy.lexer.lex_string(when))
+        self.when = when
         self.if_all = renpy.easy.to_list(if_all)
         self.if_any = renpy.easy.to_list(if_any)
         self.if_not = renpy.easy.to_list(if_not)
@@ -246,8 +253,8 @@ class Layer(object):
         self.transform_args = kwargs
 
     def check(self, attributes):
-        if self.if_attr is not None:
-            if not self.if_attr.check(attributes):
+        if self.when is not None:
+            if not self.when.check(attributes):
                 return False
 
         for i in self.if_all:
@@ -299,6 +306,7 @@ class Layer(object):
         """
         raise NotImplementedError
 
+
 class Attribute(Layer):
     """
     :doc: li
@@ -331,8 +339,8 @@ class Attribute(Layer):
         A transform or list of transforms that are applied to the
         image.
 
-    `if_attr`
-        A string containing an if_attr expression, described in the :ref:`if_attr` section.
+    `when`
+        A string containing a ``when`` expression, described in the :ref:`when` section.
         The displayable is only shown when the expression is satisfied by
         the pool of attributes currently applied to the layeredimage.
 
@@ -365,16 +373,17 @@ class Attribute(Layer):
         self.variant = variant
 
     def apply_format(self, li: "LayeredImage"):
-        self.image = self.wrap(li.format(
-            what=f"Attribute ({self.group!r}, {self.attribute!r})",
-            group=self.group,
-            variant=self.variant,
-            attribute=self.raw_attribute,
-            image=self.image,
-        ))
+        self.image = self.wrap(
+            li.format(
+                what=f"Attribute ({self.group!r}, {self.attribute!r})",
+                group=self.group,
+                variant=self.variant,
+                attribute=self.raw_attribute,
+                image=self.image,
+            )
+        )
 
     def get_displayable(self, attributes):
-
         if self.attribute not in attributes:
             return None
 
@@ -382,6 +391,7 @@ class Attribute(Layer):
             return None
 
         return self.image
+
 
 class Condition(Layer):
     """
@@ -404,8 +414,8 @@ class Condition(Layer):
         If not None, this should be a displayable that is displayed when
         the condition is true.
 
-    `if_attr`
-        A string containing an if_attr expression, described in the :ref:`if_attr` section.
+    `when`
+        A string containing a ``when`` expression, described in the :ref:`when` section.
         The condition is only evaluated when the expression is satisfied by
         the pool of attributes currently applied to the layeredimage.
 
@@ -418,7 +428,7 @@ class Condition(Layer):
     horizontally and 200 vertically.)
     """
 
-    at = [ ]
+    at = []
 
     def __init__(self, condition, image, **kwargs):
         super().__init__(**kwargs)
@@ -427,21 +437,25 @@ class Condition(Layer):
         self.image = image
 
     def apply_format(self, li: "LayeredImage"):
-        self.image = self.wrap(li.format(
-            what=f"Condition ({self.condition})",
-            image=self.image,
-        ))
+        self.image = self.wrap(
+            li.format(
+                what=f"Condition ({self.condition})",
+                image=self.image,
+            )
+        )
 
     def get_displayable(self, attributes):
-
         if not self.check(attributes):
             return None
 
         return ConditionSwitch(
-            self.condition, self.image,
-            None, Null(),
+            self.condition,
+            self.image,
+            None,
+            Null(),
             predict_all=predict_all,
         )
+
 
 class ConditionGroup(Layer):
     """
@@ -478,6 +492,7 @@ class ConditionGroup(Layer):
 
         return ConditionSwitch(*args, predict_all=predict_all)
 
+
 class Always(Layer):
     """
     :undocumented:
@@ -496,8 +511,8 @@ class Always(Layer):
         A transform or list of transforms that are applied to the
         image.
 
-    `if_attr`
-        A string containing an if_attr expression, described in the :ref:`if_attr` section.
+    `when`
+        A string containing a ``when`` expression, described in the :ref:`when` section.
         The displayable is only shown when the expression is satisfied by
         the pool of attributes currently applied to the layeredimage.
     """
@@ -508,17 +523,19 @@ class Always(Layer):
         self.image = image
 
     def apply_format(self, li: "LayeredImage"):
-        self.image = self.wrap(li.format(
-            "Always",
-            image=self.image,
-        ))
+        self.image = self.wrap(
+            li.format(
+                "Always",
+                image=self.image,
+            )
+        )
 
     def get_displayable(self, attributes):
-
         if not self.check(attributes):
             return None
 
         return self.image
+
 
 class LayeredImage(object):
     """
@@ -586,10 +603,20 @@ class LayeredImage(object):
     """
 
     attribute_function = None
-    transform_args = { }
+    transform_args = {}
     offer_screen = None
 
-    def __init__(self, attributes, at=[], name=None, image_format=None, format_function=format_function, attribute_function=None, offer_screen=None, **kwargs):
+    def __init__(
+        self,
+        attributes,
+        at=[],
+        name=None,
+        image_format=None,
+        format_function=format_function,
+        attribute_function=None,
+        offer_screen=None,
+        **kwargs,
+    ):
         self.name = name
         self.image_format = image_format
         self.format_function = format_function
@@ -610,7 +637,7 @@ class LayeredImage(object):
         kwargs.setdefault("xfit", True)
         kwargs.setdefault("yfit", True)
 
-        self.fixed_args = {k : kwargs.pop(k) for k in FIXED_PROPERTIES.intersection(kwargs)}
+        self.fixed_args = {k: kwargs.pop(k) for k in FIXED_PROPERTIES.intersection(kwargs)}
         self.transform_args = kwargs
 
     def format(self, what, attribute=None, group=None, variant=None, image=None):
@@ -622,7 +649,8 @@ class LayeredImage(object):
             variant=variant,
             attribute=attribute,
             image=image,
-            image_format=self.image_format)
+            image_format=self.image_format,
+        )
 
     def add(self, a):
         """
@@ -670,7 +698,6 @@ class LayeredImage(object):
         banned = self.get_banned(attributes)
 
         for a in self.attributes:
-
             unknown.discard(a.attribute)
 
             if a.default and (a.attribute not in banned):
@@ -679,10 +706,9 @@ class LayeredImage(object):
         if self.attribute_function:
             attributes = set(self.attribute_function(attributes))
 
-            unknown = {i[1:] if i.startswith('-') else i for i in attributes}
+            unknown = {i[1:] if i.startswith("-") else i for i in attributes}
 
             for a in self.attributes:
-
                 unknown.discard(a.attribute)
 
                 if a.variant:
@@ -700,7 +726,6 @@ class LayeredImage(object):
             d = i.get_displayable(attributes)
 
             if d is not None:
-
                 if d._duplicatable:
                     d = d._duplicate(None)
 
@@ -712,7 +737,6 @@ class LayeredImage(object):
             args.extraneous()
 
         if unknown and config.developer:
-
             message = [" ".join(args.name), "unknown attributes:", " ".join(sorted(unknown))]
 
             text = Text(
@@ -722,7 +746,7 @@ class LayeredImage(object):
                 yalign=0.5,
                 textalign=0.5,
                 color="#fff",
-                outlines=[ (1, "#0008", 0, 0) ],
+                outlines=[(1, "#0008", 0, 0)],
             )
 
             rv = Fixed(rv, text, fit_first=True)
@@ -786,7 +810,9 @@ class LayeredImage(object):
         return tuple(rv)
 
 
-def parse_property(l, final_properties: dict, expr_properties: dict, names: Container[str]) -> Literal[0]|Literal[1]|Literal[2]:
+def parse_property(
+    l, final_properties: dict, expr_properties: dict, names: Container[str]
+) -> Literal[0] | Literal[1] | Literal[2]:
     """
     Parses a property among the provided names and stores it inside the appropriate dict.
     Returns 0 if it didn't find any property,
@@ -812,8 +838,8 @@ def parse_property(l, final_properties: dict, expr_properties: dict, names: Cont
 
     if name in ("auto", "default", "multiple"):
         final_properties[name] = True
-    elif name == "if_attr":
-        final_properties[name] = IfAttr.parse(l)
+    elif name == "when":
+        final_properties[name] = When.parse(l)
     elif name in ("if_all", "if_any", "if_not"):
         expr_properties[name] = l.require(l.simple_expression)
     elif name in ("variant", "prefix"):
@@ -834,6 +860,7 @@ def parse_property(l, final_properties: dict, expr_properties: dict, names: Cont
         expr_properties[name] = l.require(l.simple_expression)
 
     return 1
+
 
 def parse_displayable(l) -> Imageable:
     """
@@ -856,7 +883,7 @@ class RawAttribute(renpy.object.Object):
 
     def after_upgrade(self, version: int):
         if version < 1:
-            self.expr_properties = self.properties # type: ignore
+            self.expr_properties = self.properties  # type: ignore
             self.final_properties = {}
 
     def __init__(self, name):
@@ -866,18 +893,20 @@ class RawAttribute(renpy.object.Object):
         self.expr_properties = {}
 
     def execute(self, group_name=None, **group_properties):
-        if "if_attr" in self.final_properties:
-            if "if_attr" in group_properties:
-                self.final_properties["if_attr"] = IfAnd(self.final_properties["if_attr"], group_properties.pop("if_attr"))
+        if "when" in self.final_properties:
+            if "when" in group_properties:
+                self.final_properties["when"] = WhenAnd(self.final_properties["when"], group_properties.pop("when"))
 
         group_args = {k: group_properties.pop(k) for k in ATL_PROPERTIES.intersection(group_properties)}
 
-        properties = (group_properties # the remaining ones, overridden by the following
+        properties = (
+            group_properties  # the remaining ones, overridden by the following
             | self.final_properties
             | {k: eval(v) for k, v in self.expr_properties.items()}
         )
 
         return [Attribute(group_name, self.name, resolve_image(self.image), group_args=group_args, **properties)]
+
 
 def parse_attribute(l):
     name = l.require(l.image_name_component)
@@ -904,7 +933,9 @@ def parse_attribute(l):
 
             if displayable is not None:
                 if ra.image is not None:
-                    lex.error(f"An attribute can only have zero or one displayable, two found : {displayable} and {ra.image}.")
+                    lex.error(
+                        f"An attribute can only have zero or one displayable, two found : {displayable} and {ra.image}."
+                    )
 
                 ra.image = displayable
 
@@ -953,12 +984,12 @@ class RawAttributeGroup(renpy.object.Object):
 
     def after_upgrade(self, version: int):
         if version < 1:
-            self.expr_properties = self.properties # type: ignore
+            self.expr_properties = self.properties  # type: ignore
             self.final_properties = {}
-            self.group_name = self.group # type: ignore
-            self.li_name = self.image_name # type: ignore
+            self.group_name = self.group  # type: ignore
+            self.li_name = self.image_name  # type: ignore
 
-    def __init__(self, li_name, group_name: str|None):
+    def __init__(self, li_name, group_name: str | None):
         self.li_name = li_name
         self.group_name = group_name
         self.children = []
@@ -1003,6 +1034,7 @@ class RawAttributeGroup(renpy.object.Object):
 
         return rv
 
+
 def parse_group(l, li_name):
     if l.keyword("multiple"):
         # a multiple group can be anonymous,
@@ -1024,7 +1056,7 @@ def parse_group(l, li_name):
         break
 
     if not got_block:
-        if l.match(':'):
+        if l.match(":"):
             l.expect_eol()
             l.expect_block("group")
 
@@ -1068,7 +1100,9 @@ def parse_group(l, li_name):
     if "variant" in rv.final_properties:
         for an in rv.children:
             if "variant" in an.final_properties:
-                l.error(f"Attribute {an.name!r} has a variant, it cannot be inside group {group_name!r} which also has a variant.")
+                l.error(
+                    f"Attribute {an.name!r} has a variant, it cannot be inside group {group_name!r} which also has a variant."
+                )
     elif (group_name is None) and ("auto" in rv.final_properties):
         # tolerated for named multiple groups, for compatibility
         l.error(f"Group {group_name!r} cannot be multiple and auto at the same time.")
@@ -1081,7 +1115,7 @@ class RawCondition(renpy.object.Object):
 
     def after_upgrade(self, version: int):
         if version < 1:
-            self.expr_properties = self.properties # type: ignore
+            self.expr_properties = self.properties  # type: ignore
             self.final_properties = {}
 
     def __init__(self, condition):
@@ -1093,6 +1127,7 @@ class RawCondition(renpy.object.Object):
     def execute(self):
         properties = self.final_properties | {k: eval(v) for k, v in self.expr_properties.items()}
         return [Condition(self.condition, resolve_image(self.image), **properties)]
+
 
 def parse_condition(l, need_expr):
     l.skip_whitespace()
@@ -1132,7 +1167,9 @@ def parse_condition(l, need_expr):
             displayable = parse_displayable(ll)
             if displayable is not None:
                 if rv.image is not None:
-                    ll.error(f"An if, elif or else statement can only have one displayable, two found : {displayable} and {rv.image}.")
+                    ll.error(
+                        f"An if, elif or else statement can only have one displayable, two found : {displayable} and {rv.image}."
+                    )
 
                 rv.image = displayable
 
@@ -1154,7 +1191,7 @@ def parse_condition(l, need_expr):
 
 
 class RawConditionGroup(object):
-    def __init__(self, conditions: list|tuple = ()):
+    def __init__(self, conditions: list | tuple = ()):
         self.conditions = conditions
 
     def execute(self):
@@ -1164,17 +1201,18 @@ class RawConditionGroup(object):
 
         return [ConditionGroup(l)]
 
+
 def parse_conditions(l):
     conditions = []
 
     conditions.append(parse_condition(l, True))
     l.advance()
 
-    while l.keyword('elif'):
+    while l.keyword("elif"):
         conditions.append(parse_condition(l, True))
         l.advance()
 
-    if l.keyword('else'):
+    if l.keyword("else"):
         conditions.append(parse_condition(l, False))
     else:
         l.unadvance()
@@ -1187,7 +1225,7 @@ class RawAlways(renpy.object.Object):
 
     def after_upgrade(self, version: int):
         if version < 1:
-            self.expr_properties = self.properties # type: ignore
+            self.expr_properties = self.properties  # type: ignore
             self.final_properties = {}
 
     def __init__(self):
@@ -1197,8 +1235,9 @@ class RawAlways(renpy.object.Object):
 
     def execute(self):
         image = resolve_image(self.image)
-        properties = self.final_properties | {k : eval(v) for k, v in self.expr_properties.items()}
+        properties = self.final_properties | {k: eval(v) for k, v in self.expr_properties.items()}
         return [Always(image, **properties)]
+
 
 def parse_always(l):
     a = RawAlways()
@@ -1222,7 +1261,9 @@ def parse_always(l):
 
             if displayable is not None:
                 if a.image is not None:
-                    l.error(f"The always statement can only have one displayable, two found : {displayable} and {a.image}.")
+                    l.error(
+                        f"The always statement can only have one displayable, two found : {displayable} and {a.image}."
+                    )
 
                 a.image = displayable
 
@@ -1237,12 +1278,12 @@ def parse_always(l):
 
     if got_block:
         return a
-    if not l.match(':'):
+    if not l.match(":"):
         l.expect_eol()
-        l.expect_noblock('always')
+        l.expect_noblock("always")
         return a
 
-    l.expect_block('always')
+    l.expect_block("always")
     l.expect_eol()
 
     ll = l.subblock_lexer()
@@ -1259,7 +1300,7 @@ def parse_always(l):
             got_block = False
         else:
             ll.expect_eol()
-            ll.expect_noblock('always')
+            ll.expect_noblock("always")
 
     if a.image is None:
         l.error("The always statement must have a displayable.")
@@ -1272,19 +1313,19 @@ class RawLayeredImage(renpy.object.Object):
 
     def after_upgrade(self, version: int):
         if version < 1:
-            self.expr_properties = self.properties # type: ignore
+            self.expr_properties = self.properties  # type: ignore
             self.final_properties = {}
 
     def __init__(self, name):
         self.name = name
-        self.children: list[RawAlways|RawAttribute|RawAttributeGroup|RawConditionGroup] = []
+        self.children: list[RawAlways | RawAttribute | RawAttributeGroup | RawConditionGroup] = []
         self.final_properties = {}
         self.expr_properties = {}
 
     def execute(self):
-        properties = self.final_properties | {k : eval(v) for k, v in self.expr_properties.items()}
+        properties = self.final_properties | {k: eval(v) for k, v in self.expr_properties.items()}
 
-        l = [ ]
+        l = []
         for i in self.children:
             l.extend(i.execute())
 
@@ -1293,8 +1334,10 @@ class RawLayeredImage(renpy.object.Object):
             LayeredImage(l, name=self.name.replace(" ", "_"), **properties),
         )
 
+
 def execute_layeredimage(rai):
     rai.execute()
+
 
 def parse_layeredimage(l):
     name = [l.require(l.image_name_component)]
@@ -1306,7 +1349,7 @@ def parse_layeredimage(l):
 
     name = " ".join(name)
 
-    l.require(':')
+    l.require(":")
     l.expect_block("layeredimage")
 
     ll = l.subblock_lexer()
@@ -1315,16 +1358,16 @@ def parse_layeredimage(l):
     rv = RawLayeredImage(name)
 
     while not ll.eob:
-        if ll.keyword('attribute'):
+        if ll.keyword("attribute"):
             rv.children.append(parse_attribute(ll))
 
-        elif ll.keyword('group'):
+        elif ll.keyword("group"):
             rv.children.append(parse_group(ll, name))
 
-        elif ll.keyword('if'):
+        elif ll.keyword("if"):
             rv.children.append(parse_conditions(ll))
 
-        elif ll.keyword('always'):
+        elif ll.keyword("always"):
             rv.children.append(parse_always(ll))
 
         elif ll.keyword("pass"):
@@ -1344,12 +1387,15 @@ def parse_layeredimage(l):
 
     return rv
 
+
 def lint_layeredimage(rli: RawLayeredImage) -> None:
     for c in rli.children:
         if isinstance(c, RawAttributeGroup):
             # named auto multiple groups have weird behavior
             if c.group_name and {"auto", "multiple"}.issubset(c.final_properties):
-                renpy.error(f"In Layeredimage {rli.name!r}, group {c.group_name!r} should not be named, auto and multiple at the same time.")
+                renpy.error(
+                    f"In Layeredimage {rli.name!r}, group {c.group_name!r} should not be named, auto and multiple at the same time."
+                )
 
     if False:
         # Things that are obsolete but work, so are not reported:
@@ -1359,11 +1405,11 @@ def lint_layeredimage(rli: RawLayeredImage) -> None:
         # - non-auto multiple groups with a variant and a single attribute inside (use variant at the attribute level)
         for c in rli.children:
             if getattr(c, "if_any", None):
-                renpy.error("if_any is obsolete, use if_attr instead.")
+                renpy.error('if_any is obsolete, use "when" instead.')
             elif getattr(c, "if_all", None):
-                renpy.error("if_all is obsolete, use if_attr instead.")
+                renpy.error('if_all is obsolete, use "when" instead.')
             elif getattr(c, "if_not", None):
-                renpy.error("if_not is obsolete, use if_attr instead.")
+                renpy.error('if_not is obsolete, use "when" instead.')
 
             if {"prefix", "variant"}.intersection(getattr(c, "expr_properties", ())):
                 renpy.error("prefix and variant should be passed unquoted.")
@@ -1374,11 +1420,17 @@ def lint_layeredimage(rli: RawLayeredImage) -> None:
                 if named and multiple:
                     renpy.error("Multiple groups should not have a name.")
 
-                if multiple and (not c.final_properties.get("auto", False)) and (("variant" in c.final_properties) or ("variant" in c.expr_properties)) and (len(c.children) == 1):
+                if (
+                    multiple
+                    and (not c.final_properties.get("auto", False))
+                    and (("variant" in c.final_properties) or ("variant" in c.expr_properties))
+                    and (len(c.children) == 1)
+                ):
                     renpy.error("Use variant at the attribute level, rather than creating a multiple group.")
 
 
-renpy.register_statement("layeredimage",
+renpy.register_statement(
+    "layeredimage",
     parse=parse_layeredimage,
     execute=execute_layeredimage,
     lint=lint_layeredimage,
@@ -1404,22 +1456,20 @@ class LayeredImageProxy(object):
     """
 
     def __init__(self, name, transform=None):
-
         self.name = name
 
         if "[" not in self.name:
             if renpy.get_registered_image(name) is None:
-                    raise Exception("{!r} is not a registered image name.".format(self.name))
+                raise Exception("{!r} is not a registered image name.".format(self.name))
 
         if transform is None:
-            self.transform = [ ]
+            self.transform = []
 
         else:
             self.transform = renpy.easy.to_list(transform)
 
     @property
     def image(self):
-
         name = self.name
 
         if "[" in name:
@@ -1433,7 +1483,6 @@ class LayeredImageProxy(object):
         return image
 
     def _duplicate(self, args):
-
         rv = self.image._duplicate(args)
 
         for i in self.transform:
@@ -1442,7 +1491,6 @@ class LayeredImageProxy(object):
         return rv
 
     def filter_attributes(self, attributes):
-
         if attributes is None:
             return None
 
@@ -1460,6 +1508,7 @@ class LayeredImageProxy(object):
 
     def _list_attributes(self, tag, attributes):
         return self.filter_attributes(self.image._list_attributes(tag, attributes))
+
 
 renpy.store.Attribute = Attribute
 renpy.store.LayeredImage = LayeredImage

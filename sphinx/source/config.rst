@@ -108,10 +108,11 @@ that feature.
     Similar to the default statement, these callbacks are a good place
     to add data to the game that does not exist, but needs to.
 
-.. var:: config.context_callback = None
+.. var:: config.context_callbacks = [ ]
 
-    This is a callback that is called with no arguments when Ren'Py enters a
-    new context, such as a menu context.
+    These are callbacks that are called wioh no arguments when Ren'Py enters
+    a new context, such as a at the start of the game, when entering the game
+    or main menus, or when beginning a replay.
 
 .. var:: config.interact_callbacks = [ ... ]
 
@@ -393,7 +394,7 @@ Display
     shown for at least this amount of time. The image may be shown longer
     if Ren'Py takes longer to start up.
 
-.. var:: config.mipmap = "auto"
+.. var:: config.mipmap = True
 
     This controls if Ren'Py generates mipmaps for images. If True, mipmaps are always generated. If "auto", mipmaps
     are generated only if the window is smaller than 75% of the virtual screen size. If False, mipmaps are never
@@ -481,6 +482,19 @@ History
 
     The number of entries of dialogue history Ren'Py keeps. This is
     set to 250 by the default gui.
+
+
+Images
+------
+
+.. var:: config.image_directories = [ "images" ]
+
+    A list of one or more directories that Ren'Py searches for images, as described in the :ref:`images-directory` section.
+    The directories are searched in order, and the first directory that contains the image is used.
+
+.. var:: config.image_extensions =  [ ".jpg", ".jpeg", ".png", ".webp", ".avif", ".svg" ]
+
+    A list of of file extensions that Ren'Py will use when searching for images, as described in the :ref:`images-directory` section.
 
 
 Input, Focus, and Events
@@ -741,17 +755,20 @@ Media (Music, Sound, and Video)
 
 .. var:: config.has_music = True
 
-    If true, the "music" mixer is enabled. The default GUI will hide the music mixer if this is false. When this,
-    config.has_sound, and config.has_voice are all false, the default GUI will hide the main mixer as well.
+    If true, the "music" mixer is enabled. Audio channels will not be assigned the "music" mixer when this is false. The
+    default GUI will hide the music mixer if this is false. When this, config.has_sound, and config.has_voice are all
+    false, the default GUI will hide the main mixer as well.
 
 .. var:: config.has_sound = True
 
-    If true, the "sfx" mixer is enabled. The default GUI will hide the sound mixer if this is false.
+    If true, the "sfx" mixer is enabled. Audio channels will not be assigned the "sfx" mixer when this is false.
+    The default GUI will hide the sound mixer if this is false.
 
 .. var:: config.has_voice = True
 
-    If true, the "voice" mixer is enabled. The default GUI will hide the voice mixer if this is false. Ren'Py will
-    disable the voice system if this is false.
+    If true, the "voice" mixer is enabled. Ren'Py's voice statement and other voice-related functionality will be
+    disabled when this is false. Audio channels will not be assigned the "voice" mixer when this is  false. The default
+    GUI will hide the voice mixer if this is false.
 
 .. var:: config.main_menu_music = None
 
@@ -944,15 +961,12 @@ Paths
 
 .. var:: config.search_prefixes = [ "", ... ]
 
-    A list of prefixes that are prepended to filenames that are searched
-    for.
+    A list of prefixes that are prepended to filenames that are loaded. This
+    is only used when a file is loaded or checked for being loadable. It does
+    not affect scans of files used to automatically define images or namespace
+    variables.
 
-.. var:: config.searchpath = [ 'common', 'game', ... ]
-
-    A list of directories that are searched for images, music,
-    archives, and other media, but not scripts. This is initialized to
-    a list containing "common" and the name of the game directory.
-
+.. config.searchpath was formerly documented.
 
 Quit
 ----
@@ -1184,6 +1198,21 @@ Saving and Loading
     This must be set with either the define statement, or inside a ``python
     early`` block. It should only reference other things typically available
     to ``python early`` blocks.
+
+    The callback can make use of :var:`persistent._version` to determine when
+    the data was originated and, if managed properly, when it was last
+    migrated. A value of None implies that the data predates this feature being
+    added in Ren'Py 8.4.
+
+    A extremely basic callback may look something like::
+
+        def migrate_persistent(data):
+            if data._version is None:
+                # Update values in data to be suitable for current version.
+                ...
+
+                # Update originating version.
+                data._version = config.version
 
 .. var:: config.quicksave_slots = 10
 

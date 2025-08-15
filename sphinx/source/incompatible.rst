@@ -13,24 +13,51 @@ Incompatible changes to the GUI are documented at :ref:`gui-changes`, as
 such changes only take effect when the GUI is regenerated.
 
 
+.. _incompatible-8.5.0:
+
+8.5.0
+-----
+
+**Image Directories** The config.images_directory variable has been superseded by
+:var:`config.image_directories`, which is a list of directories that Ren'Py searches for images. Scripts that change
+the config.images_directory variable shoul be migrated. For example, change::
+
+    define config.images_directory = "myimages"
+
+to::
+
+    define config.image_directories = [ "myimages" ]
+
+
+.. _incompatible-8.4.2:
+
+8.4.2
+-----
+
+**Zoom and the Z-Axis** In Ren'Py 8.4, the :tpref:`zoom` transform property applies to the z-axis as well as the x and y
+axes. This can cause a behavior change in older games that did not expect the z-axis to be zoomed. To revert this
+change, add to your game::
+
+    define config.zoom_zaxis = False
+
+
+.. _incompatible-8.4.1:
+
+8.4.1
+-----
+
+**Constant-power Audio Panning** It's now possible to revert the change to
+constant-power audio panning that was introduced in 8.1.0. To do this, add to
+your game::
+
+    define config.adjust_audio_amplitude = 1.0 / 0.7071067811865476
+
+
 .. _incompatible-8.4.0:
 
 8.4.0
 -----
 
-
-**Mipmaps**
-Mipmaps are smaller versions of an image that are used when Ren'Py scales an image down. Using mipmaps
-prevents the image from becoming jagged when scaled down, but generating mipmaps takes time and can cause the game
-to use more memory.
-
-Ren'Py now leaves the decision of if to create mipmaps to the developer, who knows if the game will scale down an
-image. To always enable mipmaps, set :var:`config.mipmap` to True. If this isn't set to true, Ren'Py will only
-create mipmaps if the display is scaled down to less than 75% of the virtual window size.
-
-Mipmaps will automatically be created for images loaded for the purpose of Live2D or AssimpModel, as these are
-likely to be scaled down.  Mipmaps can be created for specific images by providing True to the mipmap parameter
-of :func:`Image`.
 
 **Automatic Oversamping** When Ren'Py is scaled up enough, it can search the image files for
 higher resolution images, and load those instead. See :ref:`the documentation <automatic-oversampling>` for more informaiton.
@@ -85,6 +112,10 @@ In previous versions of Ren'Py, the order in which shader parts that shared the 
 priority were applied was undefined. Now, the parts are ordered by the name of the shader, producing
 a reliable order, but this reliable order may be diferent than what was seen on particular systems.
 
+**Python Module Paths**
+When a Python module is loaded from the game/ directory, the ``__file__`` variable is set to the relative path of the
+module, which can be passed to :func:`renpy.open_file`. Previously, ``__file__`` could be set to the absolute path of
+the module in some cases, and the relative path in others.
 
 .. _incompatible-8.3.4:
 .. _incompatible-7.8.4:
@@ -1134,7 +1165,7 @@ underneath the game directory) for images, and define them based on their
 filename. To disable this behavior, use the code::
 
     init python:
-        config.image_directory = None
+        config.images_directory = None
 
 
 .. _incompatible-6.18:

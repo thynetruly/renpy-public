@@ -442,7 +442,7 @@ cdef class ModelSizeGetter(Getter):
 
 cdef class LODBiasGetter(Getter):
     cdef object get(self, GL2DrawingContext context, GL2Model model):
-        return float(renpy.config.gl_lod_bias)
+        return context.uniforms.get(self.uniform_name, float(renpy.config.gl_lod_bias))
 
 
 cdef class TimeGetter(Getter):
@@ -631,7 +631,7 @@ UNIFORM_GETTER_CLASSES = {
     "u_lod_bias": (LODBiasGetter, "float"),
     "u_time": (TimeGetter, "float"),
     "u_random": (RandomGetter, "vec4"),
-    "u_viewport": (ViewportGetter, "vec2"),
+    "u_viewport": (ViewportGetter, "vec4"),
     "u_drawable_size": (DrawableSizeGetter, "vec2"),
     "u_virtual_size": (VirtualSizeGetter, "vec2"),
     "tex0" : (Tex0Getter, "sampler2D"),

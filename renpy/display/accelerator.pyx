@@ -585,7 +585,7 @@ cdef class RenderTransform:
             if yzoom < 0:
                 yo += height
 
-        if zoom != 1:
+        if zoom != 1 and renpy.config.zoom_zaxis:
             rzdz = zoom
 
         # Rotation.
@@ -937,6 +937,8 @@ cdef class RenderTransform:
 
         if state.nearest:
             rv.add_property("texture_scaling", "nearest")
+        elif state.nearest is not None:
+            rv.add_property("texture_scaling", "linear_mipmap_nearest")
 
         if state.blend:
             rv.add_property("blend_func", renpy.config.gl_blend_func[state.blend])

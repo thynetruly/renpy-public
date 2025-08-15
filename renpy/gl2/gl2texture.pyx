@@ -227,7 +227,7 @@ cdef class TextureLoader:
             texnums[0] = texture_number
             glDeleteTextures(1, texnums)
 
-            if texture_number not in self.allocated:
+            if texture_number not in self.allocated and texture_number:
                 print("Leaking texture:", texture_number)
 
             self.allocated.discard(texture_number)
@@ -310,7 +310,9 @@ cdef class GLTexture(GL2Model):
                 0.0, 0.0, width, height,
                 0.0, 0.0, 1.0, 1.0,
                 )
-            self.properties = { }
+            self.properties = {
+                "mipmap" : self.should_have_mipmaps({}),
+                }
 
     def should_have_mipmaps(GLTexture self, properties):
         """

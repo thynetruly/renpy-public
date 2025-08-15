@@ -474,13 +474,20 @@ cdef class GL2Draw:
             return False
 
         # Log the GL version.
-        renderer = <char *> glGetString(GL_RENDERER)
-        version = <char *> glGetString(GL_VERSION)
+        vendor_string = <char *> glGetString(GL_VENDOR)
+        vendor = self.info["gpu_vendor"] = vendor_string.decode("utf-8")
+        renpy.display.log.write(f"Vendor: {vendor!r}")
 
-        renpy.display.log.write("Vendor: %r", str(<char *> glGetString(GL_VENDOR)))
-        renpy.display.log.write("Renderer: %r", renderer)
-        renpy.display.log.write("Version: %r", version)
-        renpy.display.log.write("Display Info: %s", self.display_info)
+        renderer_string = <char *> glGetString(GL_RENDERER)
+        renderer = self.info["gpu_name"] = renderer_string.decode("utf-8")
+        renpy.display.log.write(f"Renderer: {renderer!r}")
+
+        version_string = <char *> glGetString(GL_VERSION)
+        version = self.info["gpu_driver_version"] = version_string.decode("utf-8")
+        renpy.display.log.write(f"Version: {version!r}")
+
+        self.display_info = renpy.display.get_info()
+        renpy.display.log.write(f"Display Info: {self.display_info}")
 
         extensions_string = <char *> glGetString(GL_EXTENSIONS)
         extensions = set(extensions_string.decode("utf-8").split(" "))
@@ -525,7 +532,8 @@ cdef class GL2Draw:
                 self.shader_cache.clear()
 
         if full_reset:
-            pygame.display.get_window().recreate_gl_context(always=renpy.emscripten)
+            if pygame.display.get_window().recreate_gl_context(always=renpy.emscripten):
+                renpy.display.interface.kill_textures()
 
         # Are we in fullscreen mode?
         if renpy.emscripten:
@@ -1104,7 +1112,14 @@ cdef class GL2Draw:
                 model.set_texture(i, self.render_to_texture(c[0], properties=r.properties))
 
             if r.mesh is True:
-                model.mesh = model.get_texture(0).mesh
+                tex = model.get_texture(0)
+                if tex.width == model.width and tex.height == model.height:
+                    model.mesh = tex.mesh
+                else:
+                    # Otherwise, we need to use a mesh.
+                    model.mesh = renpy.gl2.gl2mesh2.Mesh2.texture_rectangle(
+                        0, 0, r.width, r.height,
+                        0, 0, 1, 1)
             else:
                 model.mesh = r.mesh
 

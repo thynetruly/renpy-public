@@ -5,6 +5,88 @@ Changelog (Ren'Py 7.x-)
 *There is also a list of* :doc:`incompatible changes <incompatible>`
 
 
+.. _renpy-8.5.0:
+
+8.5.0
+=====
+
+Other Changes
+-------------
+
+The config.images_directory variable has been superseded by :var:`config.image_directories`, which is a list of
+directories that Ren'Py searches for images.
+
+The game.zip file produced by the web platform no longer contains .py files.
+
+
+.. _renpy-8.4.1:
+
+8.4.2
+=====
+
+
+
+Other Changes
+-------------
+
+Ren'Py will now promopt you to close other Ren'Py games before an upgrade. This addresses problems on Windows
+that could be caused by launcher files in use by games that are running during the upgrade.
+
+
+.. _renpy-8.4.1:
+
+8.4.1
+=====
+
+Fixes
+-----
+
+Ren'Py will no longer report "Leaking texture: 0" warnings, which could be spurious in some cases.
+
+On the web platform, textures are reloaded when the browser window is resized, preventing the textures from appearing
+transparent or black.
+
+Playing a movie on the web platform no longer causes Ren'Py to produce a stream of warnings.
+
+The :func:`gui.SetPreference` action once again rebuilds the styles after the preference is set.
+
+The config.dissolve_shrinks option, which provides backwards compatibility for :class:`AlphaDissolve` transitions and
+:func:`AlphaBlend` displayables with mismatched child sizes, now works as intended.
+
+Copying translations between games now works correctly. This is especially important for transferring translations from
+the launcher to newly-created games, ensuring new non-English games are set up properly.
+
+Diagnostic print statements that could appear when playing movies on the web platform have been eliminated.
+
+The pixellate transition now functions as expected.
+
+Features
+--------
+
+Ren'Py now scans for templates in subdirectories of the projects directory.
+
+Ren'Py now supports Python's `importlib.resources <https://docs.python.org/3.12/library/importlib.resources.html>`_
+module. This provides a way to load the resources in a Python package, even if that Python package is stored in an RPA
+archive or an Android APK or asset pack.
+
+Other Changes
+-------------
+
+The lint check for when translation functions are called with the wrong number of arguments was too slow,
+to be included in lint, and so this check has been removed for the time being.
+
+Support for right-to-left languages is now enabled by default.
+
+When loading a Python module or package from disk, Ren'Py will now set the ``__file__`` attribute to the absolute
+path of the module or package. This reverts a change made in Ren'Py 8.4.0, which set the ``__file__`` attribute
+to the path relative to the game directory. When loading a module from an RPA archive or Android APK, this changes
+to a relative path starting with ``$game``. This change is meant to help more pure Python packages work with Ren'Py,
+but we recommend that you do not rely on the ``__file__`` attribute in your code, and use importlib.resources instead.
+
+It's now possible to :ref:`revert the audio volume drop <incompatible-8.4.1>` caused by the constant power
+panning change in Ren'Py 8.1. (This can also be worked around by adjusting mixer volumes.)
+
+
 .. _renpy-8.4.0:
 
 8.4.0
@@ -61,21 +143,6 @@ that contain shader variables.
 that are not visible, and masks that are not used. This can improve performance when using Live2D models with
 many layers.
 
-Optional Mipmaps
-----------------
-
-Mipmaps are smaller versions of an image that are used when Ren'Py scales an image down. Using mipmaps
-prevents the image from becoming jagged when scaled down, but generating mipmaps takes time and can cause the game
-to use more memory.
-
-Ren'Py now leaves the decision of if to create mipmaps to the developer, who knows if the game will scale down an
-image. To always enable mipmaps, set :var:`config.mipmap` to True. If this isn't set to true, Ren'Py will only
-create mipmaps if the display is scaled down to less than 75% of the virtual window size.
-
-Mipmaps will automatically be created for images loaded for the purpose of Live2D or GLTFModel, as these are
-likely to be scaled down.  Mipmaps can be created for specific images by providing True to the mipmap parameter
-of :func:`Image`.
-
 Shaders
 -------
 
@@ -114,6 +181,25 @@ may require a skilled developer to position the model in 3D space. It's also int
 experiment and contribute insights and development back to Ren'Py. A future release will include more tools for
 working with objects in three dimensions.
 
+Optional Mipmaps
+----------------
+
+Mipmaps are smaller versions of an image that are used when Ren'Py scales an image down. Using mipmaps
+prevents the image from becoming jagged when scaled down, but generating mipmaps takes time and can cause the game
+to use more memory.
+
+Ren'Py now leaves the decision of if to create mipmaps to the developer, who knows if the game will scale down an
+image. By default, Ren'Py will create mipmaps for all images it loas. A new mode will only only create mipmaps
+when the display is scaled down to less than 75% of the virtual window size. This is suitable for games
+that do not scale down images, but for which the window size may be smaller than the virtual window size.
+
+To enable this new mode, set :var:`config.mipmap` to "auto".
+
+Mipmaps will automatically be created for images loaded for the purpose of Live2D or GLTFModel, as these are
+likely to be scaled down.  Mipmaps can be created for specific images by providing True to the mipmap parameter
+of :func:`Image`.
+
+
 Libs and Mods
 -------------
 
@@ -149,7 +235,7 @@ In places where the syntax allowed the ``at`` keyword, it now allows an ``at tra
 In places where a displayable is expected, it is now possible to use an ``image:`` block, and to define an ATL image,
 like an anonymous :ref:`atl-image-statement`.
 
-The new ``if_attr`` property introduces a more straightforward boolean condition syntax, replacing the ``if_any``,
+The new ``when`` property introduces a more straightforward boolean condition syntax, replacing the ``if_any``,
 ``if_all`` and ``if_not`` properties which remain supported for backwards compatibility. The new syntax removes
 the need for lists and quoting.
 To convert to the new syntax, you can replace::
@@ -160,7 +246,7 @@ To convert to the new syntax, you can replace::
 
 with the more concise::
 
-  if_attr ((a | b) & c & d & !(e | f)).
+  when (a or b) and c and d and not (e or f).
 
 The ``multiple`` groups may now be anonymous, and should from now on be defined with the ``multiple`` keyword placed in
 lieu of the group name. This makes their behavior more consistent and easier to understand. The behavior of named
@@ -250,6 +336,9 @@ into an error state.
 Features
 --------
 
+The :tpref:`nearest` transform property now works as documented, allowing nearest neighbor texture interpolation
+to be disabled when set to False.
+
 The new :func:`HasSideImage` function returns the presence or absence of a side image before the side image
 itself is determined, making it useable in the say screen for layout.
 
@@ -326,9 +415,19 @@ that the function is called from. The triple underscore function also marks the 
 inside for translation.
 
 The :var:`config.persistent_callback` callback makes it possible to update persistent data when it is loaded.
+Starting from this release :var:`persistent._version` will also be set to the current version of the game in
+any newly created persistent data. This can be used with the callback to migrate persistent save data.
 
 Changes
 -------
+
+The :func:`renpy.get_renderer_info` function now returns a dictionary containing information about user's
+GPU and graphics driver, when available.
+
+Lint now reports when the translation functions (:func:`_`, :func:`__`, :func:`___`, and :func:`_p`) are called
+with the wrong number of arguments.
+
+When Ren'Py loads a Python module from the game/ directory, ``__file__`` is set to the relative path of the module.
 
 Ren'Py now support showing the same :class:`Live2D` displayable on multiple layers, with multiple tags,
 or both.
@@ -392,6 +491,7 @@ to determine otherwise.
 
 Ren'Py now also searches for `.rpe` and `.rpe.py` files in the new libs directory.
 
+:func:`renpy.get_renderer_info` now also include GPU vendor and device name as well as driver version.
 
 .. _renpy-8.3.7:
 .. _renpy-7.8.7:
